@@ -350,6 +350,9 @@ plot(obj_twsa_dam6$twsa_NMB)
 ##### Scenario analyses #####
 update_collab_accuracy <- function(df) {
   
+  # Helper function for inverse logit
+  inv_logit <- function(x) {1 / (1 + exp(-x))}
+  
   a_h_pos  <- qnorm(df$p_human_sens)
   a_ai_pos <- qnorm(df$p_ai_sens)
   
@@ -363,7 +366,6 @@ update_collab_accuracy <- function(df) {
   df$p_disagree_human_tp_ai_fn <- df$p_human_sens - df$p_agree_tp
   df$p_disagree_human_fn_ai_tp <- df$p_ai_sens    - df$p_agree_tp
   
-
   a_h_neg  <- qnorm(df$p_human_spec)
   a_ai_neg <- qnorm(df$p_ai_spec)
   
@@ -377,7 +379,33 @@ update_collab_accuracy <- function(df) {
   df$p_disagree_human_tn_ai_fp <- df$p_human_spec - df$p_agree_tn
   df$p_disagree_human_fp_ai_tn <- df$p_ai_spec    - df$p_agree_tn
   
-
+  # Calculate reliance probabilities using logistic formula
+  df$p_human_rely_ai_fn <- inv_logit(
+    df$alpha + 
+      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
+      df$beta2 * (1 - df$rho_pos) / 2
+  )
+  
+  df$p_human_rely_ai_tp <- inv_logit(
+    df$alpha + 
+      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
+      df$beta2 * (1 - df$rho_pos) / 2 +
+      df$beta3
+  )
+  
+  df$p_human_rely_ai_fp <- inv_logit(
+    df$alpha + 
+      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
+      df$beta2 * (1 - df$rho_neg) / 2 +
+      df$beta3
+  )
+  
+  df$p_human_rely_ai_tn <- inv_logit(
+    df$alpha + 
+      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
+      df$beta2 * (1 - df$rho_neg) / 2
+  )
+  
   df$p_ai_sens <-
     df$p_agree_tp +
     df$p_disagree_human_tp_ai_fn * (1 - df$p_human_rely_ai_fn) +
@@ -395,10 +423,10 @@ update_collab_accuracy <- function(df) {
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.9
 df_det_scen$rho_pos <- 0.9
-df_det_scen$p_human_rely_ai_fn <- 0.9
-df_det_scen$p_human_rely_ai_tp <- 0.9
-df_det_scen$p_human_rely_ai_tn <- 0.9
-df_det_scen$p_human_rely_ai_fp <- 0.9
+df_det_scen$alpha <- 0.9  
+df_det_scen$beta1 <- 0  
+df_det_scen$beta2 <- 0  
+df_det_scen$beta3 <- 0  
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -416,10 +444,10 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.9
 df_det_scen$rho_pos <- 0.9
-df_det_scen$p_human_rely_ai_fn <- 0.1
+df_det_scen$p_human_rely_ai_fn <- 0.9
 df_det_scen$p_human_rely_ai_tp <- 0.1
 df_det_scen$p_human_rely_ai_tn <- 0.1
-df_det_scen$p_human_rely_ai_fp <- 0.1
+df_det_scen$p_human_rely_ai_fp <- 0.9
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -437,10 +465,10 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.1
 df_det_scen$rho_pos <- 0.1
-df_det_scen$p_human_rely_ai_fn <- 0.9
+df_det_scen$p_human_rely_ai_fn <- 0.1
 df_det_scen$p_human_rely_ai_tp <- 0.9
 df_det_scen$p_human_rely_ai_tn <- 0.9
-df_det_scen$p_human_rely_ai_fp <- 0.9
+df_det_scen$p_human_rely_ai_fp <- 0.1
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -459,10 +487,10 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.1
 df_det_scen$rho_pos <- 0.1
-df_det_scen$p_human_rely_ai_fn <- 0.1
+df_det_scen$p_human_rely_ai_fn <- 0.9
 df_det_scen$p_human_rely_ai_tp <- 0.1
 df_det_scen$p_human_rely_ai_tn <- 0.1
-df_det_scen$p_human_rely_ai_fp <- 0.1
+df_det_scen$p_human_rely_ai_fp <- 0.9
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -476,8 +504,69 @@ print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
 
-
 # 5
+df_det_scen <- f_gen_psa(n_sim = 1)
+df_det_scen$rho_neg <- -0.9
+df_det_scen$rho_pos <- -0.9
+df_det_scen$p_human_rely_ai_fn <- 0.1
+df_det_scen$p_human_rely_ai_tp <- 0.9
+df_det_scen$p_human_rely_ai_tn <- 0.9
+df_det_scen$p_human_rely_ai_fp <- 0.1
+
+df_det_scen <- update_collab_accuracy(df_det_scen)
+
+df_out_det_scen <- f_wrapper(
+  v_treatments = v_treatments, # the treatment options
+  df_psa = df_det_scen, # input parameters
+  f_model = f_MM_diagnostic # model function
+)
+
+print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
+print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
+
+# 6
+df_det_scen <- f_gen_psa(n_sim = 1)
+df_det_scen$rho_neg <- -0.9
+df_det_scen$rho_pos <- -0.9
+df_det_scen$p_human_rely_ai_fn <- 0.9
+df_det_scen$p_human_rely_ai_tp <- 0.1
+df_det_scen$p_human_rely_ai_tn <- 0.1
+df_det_scen$p_human_rely_ai_fp <- 0.9
+
+df_det_scen <- update_collab_accuracy(df_det_scen)
+
+df_out_det_scen <- f_wrapper(
+  v_treatments = v_treatments, # the treatment options
+  df_psa = df_det_scen, # input parameters
+  f_model = f_MM_diagnostic # model function
+)
+
+print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
+print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
+
+
+# 7
+df_det_scen <- f_gen_psa(n_sim = 1)
+df_det_scen$rho_neg <- 0.5
+df_det_scen$rho_pos <- 0.5
+df_det_scen$p_human_rely_ai_fn <- 0.5
+df_det_scen$p_human_rely_ai_tp <- 0.5
+df_det_scen$p_human_rely_ai_tn <- 0.5
+df_det_scen$p_human_rely_ai_fp <- 0.5
+
+df_det_scen <- update_collab_accuracy(df_det_scen)
+
+df_out_det_scen <- f_wrapper(
+  v_treatments = v_treatments, # the treatment options
+  df_psa = df_det_scen, # input parameters
+  f_model = f_MM_diagnostic # model function
+)
+
+print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
+print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
+
+
+# 8
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.5
 df_det_scen$rho_pos <- 0.5

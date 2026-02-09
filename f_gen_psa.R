@@ -142,7 +142,7 @@ f_gen_psa <- function(
   ## When selecting our new economic model approach with human-AI collaboration
   if (human_ai_collab == TRUE) { 
     
-    # add case difficulty correlation parameter
+    # add case difficulty correlation parameters
     df_psa$rho_pos = if (psa) {
       rbeta(
         n = n_sim, 
@@ -160,6 +160,39 @@ f_gen_psa <- function(
       )
     } else {9.40 / (9.40+6.27)}
     
+    # add reliance formula parameters
+    df_psa$alpha = if (psa) {
+      rbeta(
+        n = n_sim,
+        shape1 = 12.00,
+        shape2 = 12.00
+      )
+    } else {12.00 / (12.00+12.00)}
+    
+    df_psa$beta1 = if (psa) {
+      rnorm(
+        n = n_sim,
+        mean = 1.5,
+        sd = 0.30
+      )
+    } else {1.5}
+    
+    df_psa$beta2 = if (psa) {
+      rnorm(
+        n = n_sim,
+        mean = 1.5,
+        sd = 0.30
+      )
+    } else {1.5}
+    
+    df_psa$beta3 = if (psa) {
+      rnorm(
+        n = n_sim,
+        mean = 0.3,
+        sd = 0.06
+      )
+    } else {0.3}
+    
     # add joint performance (including disagreement and agreement) parameters
     df_psa$p_disagree_human_tp_ai_fn <- NA
     df_psa$p_disagree_human_fn_ai_tp <- NA
@@ -167,6 +200,12 @@ f_gen_psa <- function(
     df_psa$p_disagree_human_fp_ai_tn <- NA
     df_psa$p_agree_tp <- NA
     df_psa$p_agree_tn <- NA
+    
+    # add reliance probabilities (will be calculated)
+    df_psa$p_human_rely_ai_fn <- NA
+    df_psa$p_human_rely_ai_tp <- NA
+    df_psa$p_human_rely_ai_tn <- NA
+    df_psa$p_human_rely_ai_fp <- NA
     
     for (i in seq_len(n_sim)) {
       
@@ -221,37 +260,38 @@ f_gen_psa <- function(
     
     
     # add reliance probabilities
-    df_psa$p_human_rely_ai_fn <- if(psa == TRUE) {
-      rbeta(
-        n = n_sim, 
-        shape1 = 22.400, 
-        shape2 = 201.600
-      )
-    } else {22.400 / (22.400+201.600)}
+    inv_logit <- function(x) {1 / (1 + exp(-x))}
     
-    df_psa$p_human_rely_ai_tp <- if(psa == TRUE) {
-      rbeta(
-        n = n_sim, 
-        shape1 = 6.800, 
-        shape2 = 2.914
-      )
-    } else {6.800 / (6.800+2.914)}
+    # p_human_rely_ai_fn (negative AI advice, positive case)
+    df_psa$p_human_rely_ai_fn[i] <- inv_logit(
+      df_psa$alpha[i] + 
+        df_psa$beta1[i] * (df_psa$p_ai_sens[i] - df_psa$p_human_sens[i]) +
+        df_psa$beta2[i] * (1 - df_psa$rho_pos[i]) / 2
+    )
     
-    df_psa$p_human_rely_ai_tn <- if(psa == TRUE) {
-      rbeta(
-        n = n_sim,
-        shape1 = 12.00, 
-        shape2 = 12.00
-      )
-    } else {12.00 / (12.00+12.00)}
+    # p_human_rely_ai_tp (positive AI advice, positive case)
+    df_psa$p_human_rely_ai_tp[i] <- inv_logit(
+      df_psa$alpha[i] + 
+        df_psa$beta1[i] * (df_psa$p_ai_sens[i] - df_psa$p_human_sens[i]) +
+        df_psa$beta2[i] * (1 - df_psa$rho_pos[i]) / 2 +
+        df_psa$beta3[i]
+    )
     
-    df_psa$p_human_rely_ai_fp <- if(psa == TRUE) {
-      rbeta(
-        n = n_sim, 
-        shape1 = 9.400, 
-        shape2 = 6.267
-      )
-    } else {9.400 / (9.400+6.267)}
+    # p_human_rely_ai_fp (positive AI advice, negative case)
+    df_psa$p_human_rely_ai_fp[i] <- inv_logit(
+      df_psa$alpha[i] + 
+        df_psa$beta1[i] * (df_psa$p_ai_spec[i] - df_psa$p_human_spec[i]) +
+        df_psa$beta2[i] * (1 - df_psa$rho_neg[i]) / 2 +
+        df_psa$beta3[i]
+    )
+    
+    # p_human_rely_ai_tn (negative AI advice, negative case)
+    df_psa$p_human_rely_ai_tn[i] <- inv_logit(
+      df_psa$alpha[i] + 
+        df_psa$beta1[i] * (df_psa$p_ai_spec[i] - df_psa$p_human_spec[i]) +
+        df_psa$beta2[i] * (1 - df_psa$rho_neg[i]) / 2
+    )
+  }
   
     # compute collaborative sensitivity
     p_collab_sens <-
@@ -270,7 +310,6 @@ f_gen_psa <- function(
     df_psa$p_ai_spec <- p_collab_spec
   }
 
-      
   return(df_psa)
 } # end of function     
 
