@@ -17,7 +17,7 @@ rm(list = ls()) # clear objects from workspace
 ##### General #####
 v_treatments <- c("Standard of care", "human-AI collaboration") # vector of strategy names
 n_currency <- "Pound"
-n_wtp <- 30000 # willingness to pay value
+n_wtp <- 35000 # willingness to pay value
 v_wtp <- seq(from = 0, to = 50000, by = 2000)  # willingness to pay vector
 
 ##### Files and functions #####
@@ -356,28 +356,28 @@ update_collab_accuracy <- function(df) {
   a_h_pos  <- qnorm(df$p_human_sens)
   a_ai_pos <- qnorm(df$p_ai_sens)
   
-  df$p_agree_tp <- mvtnorm::pmvnorm(
+  df$p_con_tp <- mvtnorm::pmvnorm(
     lower = c(-Inf, -Inf),
     upper = c(a_h_pos, a_ai_pos),
     corr  = matrix(c(1, df$rho_pos,
                      df$rho_pos, 1), 2)
   )[1]
   
-  df$p_disagree_human_tp_ai_fn <- df$p_human_sens - df$p_agree_tp
-  df$p_disagree_human_fn_ai_tp <- df$p_ai_sens    - df$p_agree_tp
+  df$p_dis_human_tp_ai_fn <- df$p_human_sens - df$p_con_tp
+  df$p_dis_human_fn_ai_tp <- df$p_ai_sens    - df$p_con_tp
   
   a_h_neg  <- qnorm(df$p_human_spec)
   a_ai_neg <- qnorm(df$p_ai_spec)
   
-  df$p_agree_tn <- mvtnorm::pmvnorm(
+  df$p_con_tn <- mvtnorm::pmvnorm(
     lower = c(-Inf, -Inf),
     upper = c(a_h_neg, a_ai_neg),
     corr  = matrix(c(1, df$rho_neg,
                      df$rho_neg, 1), 2)
   )[1]
   
-  df$p_disagree_human_tn_ai_fp <- df$p_human_spec - df$p_agree_tn
-  df$p_disagree_human_fp_ai_tn <- df$p_ai_spec    - df$p_agree_tn
+  df$p_dis_human_tn_ai_fp <- df$p_human_spec - df$p_con_tn
+  df$p_dis_human_fp_ai_tn <- df$p_ai_spec    - df$p_con_tn
   
   # Calculate reliance probabilities using logistic formula
   df$p_human_rely_ai_fn <- inv_logit(
@@ -406,27 +406,28 @@ update_collab_accuracy <- function(df) {
       df$beta2 * (1 - df$rho_neg) / 2
   )
   
+  df$p_con_fn <- 1 - df$p_con_tp - df$p_dis_human_tp_ai_fn - df$p_dis_human_fn_ai_tp
+  df$p_con_fp <- 1 - df$p_con_tn - df$p_dis_human_tn_ai_fp - df$p_dis_human_fp_ai_tn
+  
   df$p_ai_sens <-
-    df$p_agree_tp +
-    df$p_disagree_human_tp_ai_fn * (1 - df$p_human_rely_ai_fn) +
-    df$p_disagree_human_fn_ai_tp * df$p_human_rely_ai_tp
+    df$p_con_tp +
+    df$p_dis_human_tp_ai_fn * (1 - df$p_human_rely_ai_fn) +
+    df$p_dis_human_fn_ai_tp * df$p_human_rely_ai_tp
   
   df$p_ai_spec <-
-    df$p_agree_tn +
-    df$p_disagree_human_tn_ai_fp * (1 - df$p_human_rely_ai_fp) +
-    df$p_disagree_human_fp_ai_tn * df$p_human_rely_ai_tn
+    df$p_con_tn +
+    df$p_dis_human_tn_ai_fp * (1 - df$p_human_rely_ai_fp) +
+    df$p_dis_human_fp_ai_tn * df$p_human_rely_ai_tn
   
   return(df)
 }
 
+
 # 1
 df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.9
-df_det_scen$rho_pos <- 0.9
-df_det_scen$alpha <- 0.9  
-df_det_scen$beta1 <- 0  
-df_det_scen$beta2 <- 0  
-df_det_scen$beta3 <- 0  
+df_det_scen$rho_neg <- 0.95
+df_det_scen$rho_pos <- 0.95
+df_det_scen$alpha <- 3.00
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -442,12 +443,9 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
 # 2
 df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.9
-df_det_scen$rho_pos <- 0.9
-df_det_scen$p_human_rely_ai_fn <- 0.9
-df_det_scen$p_human_rely_ai_tp <- 0.1
-df_det_scen$p_human_rely_ai_tn <- 0.1
-df_det_scen$p_human_rely_ai_fp <- 0.9
+df_det_scen$rho_neg <- 0.95
+df_det_scen$rho_pos <- 0.95
+df_det_scen$alpha <- -3.00
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -463,12 +461,9 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
 # 3
 df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.1
-df_det_scen$rho_pos <- 0.1
-df_det_scen$p_human_rely_ai_fn <- 0.1
-df_det_scen$p_human_rely_ai_tp <- 0.9
-df_det_scen$p_human_rely_ai_tn <- 0.9
-df_det_scen$p_human_rely_ai_fp <- 0.1
+df_det_scen$rho_neg <- -0.95
+df_det_scen$rho_pos <- -0.95
+df_det_scen$alpha <- 3.00
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -485,12 +480,9 @@ print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
 # 4
 df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.1
-df_det_scen$rho_pos <- 0.1
-df_det_scen$p_human_rely_ai_fn <- 0.9
-df_det_scen$p_human_rely_ai_tp <- 0.1
-df_det_scen$p_human_rely_ai_tn <- 0.1
-df_det_scen$p_human_rely_ai_fp <- 0.9
+df_det_scen$rho_neg <- -0.95
+df_det_scen$rho_pos <- -0.95
+df_det_scen$alpha <- -3.00
 
 df_det_scen <- update_collab_accuracy(df_det_scen)
 
@@ -502,88 +494,3 @@ df_out_det_scen <- f_wrapper(
 
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
-
-# 5
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.9
-df_det_scen$rho_pos <- -0.9
-df_det_scen$p_human_rely_ai_fn <- 0.1
-df_det_scen$p_human_rely_ai_tp <- 0.9
-df_det_scen$p_human_rely_ai_tn <- 0.9
-df_det_scen$p_human_rely_ai_fp <- 0.1
-
-df_det_scen <- update_collab_accuracy(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_MM_diagnostic # model function
-)
-
-print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
-print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
-# 6
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.9
-df_det_scen$rho_pos <- -0.9
-df_det_scen$p_human_rely_ai_fn <- 0.9
-df_det_scen$p_human_rely_ai_tp <- 0.1
-df_det_scen$p_human_rely_ai_tn <- 0.1
-df_det_scen$p_human_rely_ai_fp <- 0.9
-
-df_det_scen <- update_collab_accuracy(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_MM_diagnostic # model function
-)
-
-print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
-print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
-
-# 7
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.5
-df_det_scen$rho_pos <- 0.5
-df_det_scen$p_human_rely_ai_fn <- 0.5
-df_det_scen$p_human_rely_ai_tp <- 0.5
-df_det_scen$p_human_rely_ai_tn <- 0.5
-df_det_scen$p_human_rely_ai_fp <- 0.5
-
-df_det_scen <- update_collab_accuracy(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_MM_diagnostic # model function
-)
-
-print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
-print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
-
-# 8
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.5
-df_det_scen$rho_pos <- 0.5
-df_det_scen$p_human_rely_ai_fn <- 0.5
-df_det_scen$p_human_rely_ai_tp <- 0.5
-df_det_scen$p_human_rely_ai_tn <- 0.5
-df_det_scen$p_human_rely_ai_fp <- 0.5
-
-df_det_scen <- update_collab_accuracy(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_MM_diagnostic # model function
-)
-
-print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
-print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
-
