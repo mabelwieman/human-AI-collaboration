@@ -2,7 +2,8 @@
 
 f_MM_diagnostic <- function(
     params,
-    v_treatments
+    v_treatments,
+    human_ai_collab = TRUE  # include human-collaborative parameters in output
 ){
   with(as.list(params), {
     
@@ -15,8 +16,8 @@ f_MM_diagnostic <- function(
     cost_test_t1 <- c_scan
     
     ## Strategy 2: AI or human-AI collaboration
-    sens_t2 <- p_ai_sens
-    spec_t2 <- p_ai_spec
+    sens_t2 <- if (human_ai_collab) p_collab_sens else p_ai_sens
+    spec_t2 <- if (human_ai_collab) p_collab_spec else p_ai_spec
     cost_test_t2 <- c_scan + c_ai
     
     v_states <- c("TP", "FN", "TN", "FP")
