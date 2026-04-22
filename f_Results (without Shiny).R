@@ -1,6 +1,6 @@
 # Description: Results without Shiny (for testing or validation purposes)
 
-##### Setup #####
+## Setup
 options(scipen = 999)
 
 # load packages (and install/update if required)
@@ -14,20 +14,20 @@ suppressPackageStartupMessages(lapply(packages, require, character.only = TRUE))
 # clear workspace
 rm(list = ls()) # clear objects from workspace
 
-##### General #####
+## General
 v_treatments <- c("Standard of care", "human-AI collaboration") # vector of strategy names
 n_currency <- "Pound"
 n_wtp <- 35000 # willingness to pay value
 v_wtp <- seq(from = 0, to = 50000, by = 2000)  # willingness to pay vector
 
-##### Files and functions #####
+## Files and functions
 # load main model functions 
 source("f_gen_psa.R") # function to generate PSA parameters
 source("f_MM_diagnostic.R") # function to calculate results
 source("f_wrapper.R") # function combining/wrapping the functions above 
 
 
-##### Obtain inputs #####
+## Obtain inputs
 df_psa <- f_gen_psa(n_sim = 10000) # probabilistic inputs
 df_det <- f_gen_psa(n_sim = 1) # deterministic inputs
 # df_det - colMeans(df_psa) # checking whether probabilistic inputs and deterministic inputs are similar
@@ -44,7 +44,7 @@ inputs_overview <- data.frame( # dataframe to be used for OWSA
 
 write.table(inputs_overview, "clipboard", sep = "\t", row.names = FALSE, col.names = FALSE)
 
-##### Obtain results #####
+## Obtain results
 # Deterministic results
 df_out_det <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
@@ -103,7 +103,7 @@ obj_bcea <- bcea( # create bcea object
 
   
 
-##### View results #####
+## View results
 obj_icers
 
 # Cost effectiveness frontier
@@ -173,7 +173,7 @@ info.rank(
 )
 
 
-##### Deterministic sensitivity analyses #####
+## Deterministic sensitivity analyses
 df_psa_owsa <- f_gen_psa() # generate input parameters (min and max values for OWSA) with default n_sim
 df_psa_owsa <- df_psa_owsa[, apply(df_psa_owsa, 2, var, na.rm = TRUE) != 0] # only select parameters with variance > 0
 df_psa_owsa <- df_psa_owsa[,-7:-34] # remove mRS proportions from DSA (to prevent the total exceeding 100%)
@@ -347,7 +347,8 @@ plot(obj_twsa_dam6$twsa_NMB)
 #   )
 # )
 
-##### Scenario analyses #####
+## Scenario analyses
+# helper function to recalculate the joined human-AI performance scores
 update_collab_accuracy <- function(df) {
   
   # Helper function for inverse logit
@@ -383,27 +384,31 @@ update_collab_accuracy <- function(df) {
   df$p_human_rely_ai_fn <- inv_logit(
     df$alpha + 
       df$beta1 * (df$p_ai_sens - df$p_human_sens) +
-      df$beta2 * (1 - df$rho_pos) / 2
+      df$beta2 * (1 - df$rho_pos) / 2 +
+      df$epsilon 
   )
   
   df$p_human_rely_ai_tp <- inv_logit(
     df$alpha + 
       df$beta1 * (df$p_ai_sens - df$p_human_sens) +
       df$beta2 * (1 - df$rho_pos) / 2 +
-      df$beta3
+      df$beta3 +
+      df$epsilon 
   )
   
   df$p_human_rely_ai_fp <- inv_logit(
     df$alpha + 
       df$beta1 * (df$p_ai_spec - df$p_human_spec) +
       df$beta2 * (1 - df$rho_neg) / 2 +
-      df$beta3
+      df$beta3 +
+      df$epsilon 
   )
   
   df$p_human_rely_ai_tn <- inv_logit(
     df$alpha + 
       df$beta1 * (df$p_ai_spec - df$p_human_spec) +
-      df$beta2 * (1 - df$rho_neg) / 2
+      df$beta2 * (1 - df$rho_neg) / 2 +
+      df$epsilon 
   )
   
   df$p_con_fn <- 1 - df$p_con_tp - df$p_dis_human_tp_ai_fn - df$p_dis_human_fn_ai_tp
