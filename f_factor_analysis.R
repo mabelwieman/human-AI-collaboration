@@ -9,6 +9,9 @@ source("f_gen_psa.R") # function to generate PSA parameters
 source("f_MM_diagnostic.R") # function to calculate results
 source("f_wrapper.R") # function combining/wrapping the functions above
 
+source("f_collab_accuracy.R") # function calculating joined human-AI performance scores
+
+
 # load packages (and install/update if required)
 library(tidyverse)
 library(mvtnorm)
@@ -65,7 +68,7 @@ run_factorial_analysis <- function(
       }
     }
     
-    df_collab <- recalc_collab(df_collab)
+    df_collab <- f_collab_accuracy(df_collab)
     
     # Run model with collaboration
     res_collab <- f_wrapper(
@@ -146,122 +149,7 @@ create_param_grid <- function() {
       stringsAsFactors = FALSE
     )
   }
-
-## helper function to recalculate the joined human-AI performance scores
-recalc_collab <- function(df) {
   
-  inv_logit <- function(x) {1 / (1 + exp(-x))}
-  
-  a_h_pos  <- qnorm(df$p_human_sens)
-  a_ai_pos <- qnorm(df$p_ai_sens)
-  
-  df$p_con_tp <- mvtnorm::pmvnorm(
-    lower = c(-Inf, -Inf),
-    upper = c(a_h_pos, a_ai_pos),
-    corr  = matrix(c(1, df$rho_pos,
-                     df$rho_pos, 1), 2)
-  )[1]
-  
-  df$p_dis_human_tp_ai_fn <- df$p_human_sens - df$p_con_tp
-  df$p_dis_human_fn_ai_tp <- df$p_ai_sens    - df$p_con_tp
-  
-  a_h_neg  <- qnorm(df$p_human_spec)
-  a_ai_neg <- qnorm(df$p_ai_spec)
-  
-  df$p_con_tn <- mvtnorm::pmvnorm(
-    lower = c(-Inf, -Inf),
-    upper = c(a_h_neg, a_ai_neg),
-    corr  = matrix(c(1, df$rho_neg,
-                     df$rho_neg, 1), 2)
-  )[1]
-  
-  df$p_dis_human_tn_ai_fp <- df$p_human_spec - df$p_con_tn
-  df$p_dis_human_fp_ai_tn <- df$p_ai_spec    - df$p_con_tn
-  
-  # Calculate reliance probabilities using logistic formula
-  df$p_human_rely_ai_fn <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
-      df$beta2 * (1 - df$rho_pos) / 2 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_tp <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
-      df$beta2 * (1 - df$rho_pos) / 2 +
-      df$beta3 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_fp <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
-      df$beta2 * (1 - df$rho_neg) / 2 +
-      df$beta3 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_tn <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
-      df$beta2 * (1 - df$rho_neg) / 2 +
-      df$epsilon 
-  )
-  
-  df$p_con_fn <- 1 - df$p_con_tp - df$p_dis_human_tp_ai_fn - df$p_dis_human_fn_ai_tp
-  df$p_con_fp <- 1 - df$p_con_tn - df$p_dis_human_tn_ai_fp - df$p_dis_human_fp_ai_tn
-  
-  df$p_ai_sens <-
-    df$p_con_tp +
-    df$p_dis_human_tp_ai_fn * (1 - df$p_human_rely_ai_fn) +
-    df$p_dis_human_fn_ai_tp * df$p_human_rely_ai_tp
-  
-  df$p_ai_spec <-
-    df$p_con_tn +
-    df$p_dis_human_tn_ai_fp * (1 - df$p_human_rely_ai_fp) +
-    df$p_dis_human_fp_ai_tn * df$p_human_rely_ai_tn
-  
-  return(df)
-}
-  
-  
-## Analysis
-analyze_results <- function(results) {
-  
-  results <- results %>% filter(is.finite(delta_icer))
-  
-  cat("\n===== SUMMARY =====\n")
-  cat("Mean ΔICER:", mean(results$delta_icer), "\n")
-  cat("Median ΔICER:", median(results$delta_icer), "\n")
-  cat("Max ΔICER:", max(results$delta_icer), "\n")
-  
-  cat("\nDecision changes (%):",
-      mean(results$decision_change) * 100, "\n")
-}
-
-
-## Visualization function
-plot_results <- function(results) {
-  
-  # Histogram
-  p1 <- ggplot(results, aes(x = delta_icer)) +
-    geom_histogram(bins = 30, fill = "steelblue") +
-    theme_minimal() +
-    labs(title = "Distribution of ΔICER")
-  
-  # Heatmap example
-  p2 <- ggplot(results,
-               aes(x = factor(p_AI_sens), y = factor(p_human_sens), fill = delta_icer)) +
-    geom_tile() +
-    scale_fill_viridis_c() +
-    theme_minimal() +
-    labs(title = "ΔICER by sensitivity of human and AI")
-  
-  print(p1)
-  print(p2)
-}
-
 ## Analysis
 analyze_results <- function(results) {
   
@@ -296,6 +184,20 @@ plot_results <- function(results) {
   
   print(p1)
   print(p2)
+}
+
+## Analysis
+analyze_results <- function(results) {
+  
+  results <- results %>% filter(is.finite(delta_icer))
+  
+  cat("\n===== SUMMARY =====\n")
+  cat("Mean ΔICER:", mean(results$delta_icer), "\n")
+  cat("Median ΔICER:", median(results$delta_icer), "\n")
+  cat("Max ΔICER:", max(results$delta_icer), "\n")
+  
+  cat("\nDecision changes (%):",
+      mean(results$decision_change) * 100, "\n")
 }
 
 ## Running
