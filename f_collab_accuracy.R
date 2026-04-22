@@ -17,12 +17,12 @@ f_collab_accuracy <- function(df_psa) {
     )[1]
   
     df_psa$p_dis_human_tp_ai_fn[i] <- df_psa$p_human_sens[i] - df_psa$p_con_tp[i]
-    df_psa$p_dis_human_fn_ai_tp <- df_psa$p_ai_sens[i]  - df_psa$p_con_tp[i]
+    df_psa$p_dis_human_fn_ai_tp[i] <- df_psa$p_ai_sens[i]  - df_psa$p_con_tp[i]
   
     a_h_neg  <- qnorm(df_psa$p_human_spec[i]) # latent threshold implied by marginal human specificity
     a_ai_neg <- qnorm(df_psa$p_ai_spec[i]) # latent threshold implied by marginal AI specificity
   
-    df_psa$p_con_tn <- mvtnorm::pmvnorm( # probability both human and AI are TN
+    df_psa$p_con_tn[i] <- mvtnorm::pmvnorm( # probability both human and AI are TN
       lower = c(-Inf, -Inf),
       upper = c(a_h_neg, a_ai_neg),
       corr  = matrix(c(1, df_psa$rho_neg[i],
@@ -32,8 +32,8 @@ f_collab_accuracy <- function(df_psa) {
     df_psa$p_dis_human_tn_ai_fp[i] <- df_psa$p_human_spec[i] - df_psa$p_con_tn[i]
     df_psa$p_dis_human_fp_ai_tn[i] <- df_psa$p_ai_spec[i]  - df_psa$p_con_tn[i]
   
-    df_psa$p_con_fn <- 1 - df_psa$p_con_tp[i] - df_psa$p_dis_human_tp_ai_fn[i] - df_psa$p_dis_human_fn_ai_tp[i]
-    df_psa$p_con_fp <- 1 - df_psa$p_con_tn[i] - df_psa$p_dis_human_tn_ai_fp[i] - df_psa$p_dis_human_fp_ai_tn[i]
+    df_psa$p_con_fn[i] <- 1 - df_psa$p_con_tp[i] - df_psa$p_dis_human_tp_ai_fn[i] - df_psa$p_dis_human_fn_ai_tp[i]
+    df_psa$p_con_fp[i] <- 1 - df_psa$p_con_tn[i] - df_psa$p_dis_human_tn_ai_fp[i] - df_psa$p_dis_human_fp_ai_tn[i]
   
     # Calculate reliance probabilities using logistic formula
     df_psa$p_human_rely_ai_fn[i] <- inv_logit(
