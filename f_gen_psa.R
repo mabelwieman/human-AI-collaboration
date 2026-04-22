@@ -317,7 +317,3 @@ f_gen_psa <- function(
   
   return(df_psa)
 } # end of function
-
-    
-  
-

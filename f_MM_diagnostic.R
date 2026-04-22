@@ -6,22 +6,22 @@ f_MM_diagnostic <- function(
 ){
   with(as.list(params), {
     
-    ##### INPUT #####
+    ## input
     n_treatments <- length(v_treatments)
     
-    #### Strategy 1: human-only ####
+    ## Strategy 1: human-only
     sens_t1 <- p_human_sens
     spec_t1 <- p_human_spec
     cost_test_t1 <- c_scan
     
-    #### Strategy 2: AI or human-AI collaboration ####
+    ## Strategy 2: AI or human-AI collaboration
     sens_t2 <- p_ai_sens
     spec_t2 <- p_ai_spec
     cost_test_t2 <- c_scan + c_ai
     
     v_states <- c("TP", "FN", "TN", "FP")
     
-    ##### DECISION TREE #####
+    ## Decision tree
     m_dt <- matrix(
       data = NA,
       nrow = n_treatments,
@@ -36,7 +36,7 @@ f_MM_diagnostic <- function(
       )
     )
     
-    ### Strategy 1 ###
+    ## Strategy 1
     m_dt[1, "p disease"]    <- p_prev
     m_dt[1, "p no disease"] <- 1 - p_prev
     m_dt[1, "TP"] <- p_prev * sens_t1
@@ -46,7 +46,7 @@ f_MM_diagnostic <- function(
     m_dt[1, "p positive"] <- m_dt[1, "TP"] + m_dt[1, "FP"]
     m_dt[1, "p negative"] <- m_dt[1, "FN"] + m_dt[1, "TN"]
     
-    ### Strategy 2 ###
+    ## Strategy 2
     m_dt[2, "p disease"]    <- p_prev
     m_dt[2, "p no disease"] <- 1 - p_prev
     m_dt[2, "TP"] <- p_prev * sens_t2
@@ -56,7 +56,7 @@ f_MM_diagnostic <- function(
     m_dt[2, "p positive"] <- m_dt[2, "TP"] + m_dt[2, "FP"]
     m_dt[2, "p negative"] <- m_dt[2, "FN"] + m_dt[2, "TN"]
     
-    ##### COSTS AND QALYS #####
+    ## Costs and QALYs
     qaly_t1 <- m_dt[1, "TP"] * u_tp +
       m_dt[1, "FN"] * u_fn +
       m_dt[1, "TN"] * u_tn +
@@ -79,7 +79,7 @@ f_MM_diagnostic <- function(
     
     iCER <- (cost_t2 - cost_t1) / (qaly_t2 - qaly_t1)
     
-    ##### OUTPUT #####
+    ## Output
     return(
       setNames(
         c(cost_t1,
