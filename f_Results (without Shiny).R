@@ -176,9 +176,8 @@ info.rank(
 
 
 ## Deterministic sensitivity analyses
-df_psa_owsa <- f_gen_psa() # generate input parameters (min and max values for OWSA) with default n_sim
+df_psa_owsa <- f_collab_accuracy(df_psa) # generate input parameters (min and max values for OWSA) with default n_sim
 df_psa_owsa <- df_psa_owsa[, apply(df_psa_owsa, 2, var, na.rm = TRUE) != 0] # only select parameters with variance > 0
-df_psa_owsa <- df_psa_owsa[,-7:-34] # remove mRS proportions from DSA (to prevent the total exceeding 100%)
 
 obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
   params_range = data.frame( # dataframe to be used for OWSA
@@ -186,7 +185,7 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
     min = stack(sapply(df_psa_owsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for owsa
     max = stack(sapply(df_psa_owsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for owsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   #lapply(df_psa_owsa, mean), # alternative to f_gen_psa(n_sim = 1) = mean of psa inputs 
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
@@ -201,7 +200,7 @@ obj_twsa_dam1 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -215,7 +214,7 @@ obj_twsa_dam2 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -229,7 +228,7 @@ obj_twsa_dam3 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -243,7 +242,7 @@ obj_twsa_dam4 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -258,7 +257,7 @@ obj_twsa_dam5 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -272,7 +271,7 @@ obj_twsa_dam6 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_gen_psa(n_sim = 1), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -350,86 +349,6 @@ plot(obj_twsa_dam6$twsa_NMB)
 # )
 
 ## Scenario analyses
-# helper function to recalculate the joined human-AI performance scores
-update_collab_accuracy <- function(df) {
-  
-  # Helper function for inverse logit
-  inv_logit <- function(x) {1 / (1 + exp(-x))}
-  
-  a_h_pos  <- qnorm(df$p_human_sens)
-  a_ai_pos <- qnorm(df$p_ai_sens)
-  
-  df$p_con_tp <- mvtnorm::pmvnorm(
-    lower = c(-Inf, -Inf),
-    upper = c(a_h_pos, a_ai_pos),
-    corr  = matrix(c(1, df$rho_pos,
-                     df$rho_pos, 1), 2)
-  )[1]
-  
-  df$p_dis_human_tp_ai_fn <- df$p_human_sens - df$p_con_tp
-  df$p_dis_human_fn_ai_tp <- df$p_ai_sens    - df$p_con_tp
-  
-  a_h_neg  <- qnorm(df$p_human_spec)
-  a_ai_neg <- qnorm(df$p_ai_spec)
-  
-  df$p_con_tn <- mvtnorm::pmvnorm(
-    lower = c(-Inf, -Inf),
-    upper = c(a_h_neg, a_ai_neg),
-    corr  = matrix(c(1, df$rho_neg,
-                     df$rho_neg, 1), 2)
-  )[1]
-  
-  df$p_dis_human_tn_ai_fp <- df$p_human_spec - df$p_con_tn
-  df$p_dis_human_fp_ai_tn <- df$p_ai_spec    - df$p_con_tn
-  
-  # Calculate reliance probabilities using logistic formula
-  df$p_human_rely_ai_fn <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
-      df$beta2 * (1 - df$rho_pos) / 2 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_tp <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_sens - df$p_human_sens) +
-      df$beta2 * (1 - df$rho_pos) / 2 +
-      df$beta3 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_fp <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
-      df$beta2 * (1 - df$rho_neg) / 2 +
-      df$beta3 +
-      df$epsilon 
-  )
-  
-  df$p_human_rely_ai_tn <- inv_logit(
-    df$alpha + 
-      df$beta1 * (df$p_ai_spec - df$p_human_spec) +
-      df$beta2 * (1 - df$rho_neg) / 2 +
-      df$epsilon 
-  )
-  
-  df$p_con_fn <- 1 - df$p_con_tp - df$p_dis_human_tp_ai_fn - df$p_dis_human_fn_ai_tp
-  df$p_con_fp <- 1 - df$p_con_tn - df$p_dis_human_tn_ai_fp - df$p_dis_human_fp_ai_tn
-  
-  df$p_ai_sens <-
-    df$p_con_tp +
-    df$p_dis_human_tp_ai_fn * (1 - df$p_human_rely_ai_fn) +
-    df$p_dis_human_fn_ai_tp * df$p_human_rely_ai_tp
-  
-  df$p_ai_spec <-
-    df$p_con_tn +
-    df$p_dis_human_tn_ai_fp * (1 - df$p_human_rely_ai_fp) +
-    df$p_dis_human_fp_ai_tn * df$p_human_rely_ai_tn
-  
-  return(df)
-}
-
-
 # 1
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.95
