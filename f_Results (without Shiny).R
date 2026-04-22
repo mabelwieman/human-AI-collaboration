@@ -25,11 +25,13 @@ v_wtp <- seq(from = 0, to = 50000, by = 2000)  # willingness to pay vector
 source("f_gen_psa.R") # function to generate PSA parameters
 source("f_MM_diagnostic.R") # function to calculate results
 source("f_wrapper.R") # function combining/wrapping the functions above 
-
+source("f_collab_accuracy.R") # function calculating joined human-AI performance scores
 
 ## Obtain inputs
 df_psa <- f_gen_psa(n_sim = 10000) # probabilistic inputs
+df_psa <- f_collab_accuracy(df_psa)
 df_det <- f_gen_psa(n_sim = 1) # deterministic inputs
+df_det <- f_collab_accuracy(df_det)
 # df_det - colMeans(df_psa) # checking whether probabilistic inputs and deterministic inputs are similar
 # (df_det - colMeans(df_psa)) / df_det # checking whether probabilistic inputs and deterministic inputs are similar
 # abs((df_det - colMeans(df_psa)) / df_det) * 100 # checking whether probabilistic inputs and deterministic inputs are similar
@@ -434,7 +436,7 @@ df_det_scen$rho_neg <- 0.95
 df_det_scen$rho_pos <- 0.95
 df_det_scen$alpha <- 3.00
 
-df_det_scen <- update_collab_accuracy(df_det_scen)
+df_det_scen <- f_collab_accuracy(df_det_scen)
 
 df_out_det_scen <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
@@ -452,7 +454,7 @@ df_det_scen$rho_neg <- 0.95
 df_det_scen$rho_pos <- 0.95
 df_det_scen$alpha <- -3.00
 
-df_det_scen <- update_collab_accuracy(df_det_scen)
+df_det_scen <- f_collab_accuracy(df_det_scen)
 
 df_out_det_scen <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
@@ -470,7 +472,7 @@ df_det_scen$rho_neg <- -0.95
 df_det_scen$rho_pos <- -0.95
 df_det_scen$alpha <- 3.00
 
-df_det_scen <- update_collab_accuracy(df_det_scen)
+df_det_scen <- f_collab_accuracy(df_det_scen)
 
 df_out_det_scen <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
@@ -489,7 +491,7 @@ df_det_scen$rho_neg <- -0.95
 df_det_scen$rho_pos <- -0.95
 df_det_scen$alpha <- -3.00
 
-df_det_scen <- update_collab_accuracy(df_det_scen)
+df_det_scen <- f_collab_accuracy(df_det_scen)
 
 df_out_det_scen <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
