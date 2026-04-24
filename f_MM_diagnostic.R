@@ -1,8 +1,8 @@
 # Description: Deterministic model function
 
 f_MM_diagnostic <- function(
-    params,
-    v_treatments,
+    params, # input parameters
+    v_treatments, # the treatment options: standard of care vs AI alone or Human-AI collaboration, depends on selection
     human_ai_collab = TRUE  # include human-collaborative parameters in output
 ){
   with(as.list(params), {
