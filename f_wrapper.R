@@ -4,7 +4,7 @@ f_wrapper <- function(
     df_psa, # psa input dataframe
     v_treatments, # the treatment options (as.character)
     owsa = FALSE, # required for owsa output dataframe format
-    owsa_wtp = 30000, # required for owsa output
+    owsa_wtp = 35000, # required for owsa output
     f_model # specify model function
 ){
   n_sim <- dim(df_psa)[1] # number of simulations (as indicated in f_gen_psa()) deterministic (n_sim = 1) in case of owsa
