@@ -7,7 +7,6 @@ f_gen_psa <- function(
 ){
   set.seed(seed)
   
-  
   # probabilistic or deterministic
   if(n_sim > 1) {psa <- TRUE} else {psa <- FALSE} 
   
@@ -28,29 +27,28 @@ f_gen_psa <- function(
     p_human_sens = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 4.200, 
-        shape2 = 1.050
+        shape1 = 4.4625, 
+        shape2 = 0.7875
       )
-    } else {0.80},
+    } else {0.85},
     
     # probability that the human gives a negative judgement when the patient does not have the disease 
     p_human_spec = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 6.800, 
-        shape2 = 2.914
+        shape1 = 4.4625, 
+        shape2 = 0.7875
       )
-    } else {0.70},
-    
+    } else {0.85},
     
     # probability that the AI-based health technology gives a positive judgement when the patient truly has the disease (assumption: AI has higher sensitivity than human)
     p_ai_sens = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 6.800, 
-        shape2 = 2.914
+        shape1 = 1.600, 
+        shape2 = 0.178
       )
-    } else {0.70},
+    } else {0.90},
 
     # probability that the AI-based health technology gives a negative judgement when the patient does not have the disease (assumption: AI has lower specificity than human)       
     p_ai_spec = if(psa == TRUE) {
@@ -65,10 +63,10 @@ f_gen_psa <- function(
     u_tp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 4.200, 
-        shape2 = 1.050
+        shape1 = 6.800, 
+        shape2 = 2.914
       )
-    } else {0.80},
+    } else {0.70},
 
     # assumed utility score for a true negative case, correct diagnosis and no overtreatment   
     u_tn = if(psa == TRUE) {
@@ -83,19 +81,19 @@ f_gen_psa <- function(
     u_fn = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 12.00, 
-        shape2 = 12.00
+        shape1 = 14.40, 
+        shape2 = 9.60
       )
-    } else {0.50},
+    } else {0.60},
     
     # assumed utility score for a false positive case, incorrect diagnosis and unnecessary treatment
     u_fp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 6.800, 
-        shape2 = 2.914
+        shape1 = 4.200, 
+        shape2 = 1.050
       )
-    } else {0.70},
+    } else {0.80},
     
     # assumed costs of a diagnostic test (CT scan)
     c_scan = 0,   
@@ -105,9 +103,9 @@ f_gen_psa <- function(
       rgamma(
         n = n_sim,
         shape = 25,
-        scale = 2
+        scale = 8
       )
-    } else {50},
+    } else {200},
     
     # assumed costs of a true positive, including treatment
     c_tp = if(psa == TRUE) {
@@ -138,7 +136,6 @@ f_gen_psa <- function(
   
   ) # close data frame  
     
-  
   ## When selecting our new economic model approach with human-AI collaboration
   if (human_ai_collab == TRUE) { 
     
@@ -155,10 +152,10 @@ f_gen_psa <- function(
     df_psa$rho_neg = if (psa) {
       rbeta(
         n = n_sim, 
-        shape1 = 3.75, 
-        shape2 = 11.25
+        shape1 = 12.00, 
+        shape2 = 12.00
       )
-    } else {0.25}
+    } else {0.50}
     
     # assumed baseline trust
     df_psa$alpha = if (psa) {
