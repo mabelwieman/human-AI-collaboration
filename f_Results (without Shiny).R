@@ -29,9 +29,9 @@ source("f_collab_accuracy.R") # function calculating joined human-AI performance
 
 ## Obtain inputs
 df_psa <- f_gen_psa(n_sim = 10000) # probabilistic inputs
-df_psa <- f_collab_accuracy(df_psa)
+df_psa <- f_collab_accuracy(df_psa) # when human-AI collab is on
 df_det <- f_gen_psa(n_sim = 1) # deterministic inputs
-df_det <- f_collab_accuracy(df_det)
+df_det <- f_collab_accuracy(df_det) # when human-AI collab is on
 # df_det - colMeans(df_psa) # checking whether probabilistic inputs and deterministic inputs are similar
 # (df_det - colMeans(df_psa)) / df_det # checking whether probabilistic inputs and deterministic inputs are similar
 # abs((df_det - colMeans(df_psa)) / df_det) * 100 # checking whether probabilistic inputs and deterministic inputs are similar
@@ -56,9 +56,10 @@ df_out_det <- f_wrapper(
 
 print(df_out_det[3] * n_wtp - df_out_det[1], digits = 10) # NMB standard care
 print(df_out_det[3] - (df_out_det[1] / n_wtp), digits = 10) # NHB standard care
-
 print(df_out_det[4] * n_wtp - df_out_det[2], digits = 10) # NMB AI
 print(df_out_det[4] - df_out_det[2] / n_wtp, digits = 10) # NHB AI
+print(df_out_det[3] * 25000 - df_out_det[1], digits = 10) # NMB standard care with 25,000 wtp
+print(df_out_det[4] * 25000 - df_out_det[2], digits = 10) # NMB AI with 25,000 wtp
 
 # Probabilistic results
 df_out <- f_wrapper(
@@ -79,13 +80,12 @@ obj_icers <- calculate_icers( # create calculate_icers object
 obj_icers[,2] <- round(obj_icers[,2], 0) # round costs to 0 decimals
 obj_icers[,3] <- round(obj_icers[,3], 4) # round QALYs to 4 decimals
 
-
 print(v_out_mean[3] * n_wtp - v_out_mean[1], digits = 10) # NMB standard care
 print(v_out_mean[3] - (v_out_mean[1] / n_wtp), digits = 10) # NHB standard care
-
 print(v_out_mean[4] * n_wtp - v_out_mean[2], digits = 10) # NMB AI
 print(v_out_mean[4] - v_out_mean[2] / n_wtp, digits = 10) # NHB AI
-
+print(v_out_mean[3] * 25000 - v_out_mean[1], digits = 10) # NMB standard care with 25,000 wtp
+print(v_out_mean[4] * 25000 - v_out_mean[2], digits = 10) # NMB AI with 25,000 wtp
 
 obj_psa_dam <- make_psa_obj( # generate dampack PSA object
   cost = df_out[,1:2], # dataframe of costs
@@ -102,8 +102,6 @@ obj_bcea <- bcea( # create bcea object
   interventions = v_treatments, # vector of strategy names
   Kmax = 50000 # maximum value possible for the wtp
 ) # bcea end
-
-  
 
 ## View results
 obj_icers
@@ -174,9 +172,9 @@ info.rank(
   graph = "base"
 )
 
-
 ## Deterministic sensitivity analyses
 df_psa_owsa <- f_collab_accuracy(df_psa) # generate input parameters (min and max values for OWSA) with default n_sim
+# df_psa_owsa <- f_gen_psa() # generate input parameters when human-AI collab is off
 df_psa_owsa <- df_psa_owsa[, apply(df_psa_owsa, 2, var, na.rm = TRUE) != 0] # only select parameters with variance > 0
 
 obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
@@ -185,8 +183,9 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
     min = stack(sapply(df_psa_owsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for owsa
     max = stack(sapply(df_psa_owsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for owsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  params_basecase = f_collab_accuracy(df_det), # base-case parameters 
   #lapply(df_psa_owsa, mean), # alternative to f_gen_psa(n_sim = 1) = mean of psa inputs 
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB", "iQALY", "iCost", "iCER", "iNMB"), # outcomes of interest produced by FUN  
@@ -201,6 +200,7 @@ obj_twsa_dam1 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -215,6 +215,7 @@ obj_twsa_dam2 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -229,6 +230,7 @@ obj_twsa_dam3 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -243,12 +245,12 @@ obj_twsa_dam4 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
   progress = TRUE # show progression in console
 ) # end run_twsa_det
-
 
 df_psa_twsa <- df_psa_owsa[, c("p_human_sens", "p_human_spec")]
 obj_twsa_dam5 <- run_twsa_det( # generate dampack TWSA object
@@ -258,6 +260,7 @@ obj_twsa_dam5 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -272,12 +275,12 @@ obj_twsa_dam6 <- run_twsa_det( # generate dampack TWSA object
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
+  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
   progress = TRUE # show progression in console
 ) # end run_twsa_det
-
 
 owsa_opt_strat(
   obj_owsa_dam$owsa_NMB,
@@ -366,7 +369,6 @@ df_out_det_scen <- f_wrapper(
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
-
 # 2
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.95
@@ -383,7 +385,6 @@ df_out_det_scen <- f_wrapper(
 
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
-
 
 # 3
 df_det_scen <- f_gen_psa(n_sim = 1)
@@ -402,8 +403,6 @@ df_out_det_scen <- f_wrapper(
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
 
-
-
 # 4
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- -0.95
@@ -420,3 +419,4 @@ df_out_det_scen <- f_wrapper(
 
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
+# end of script
