@@ -19,7 +19,7 @@ run_factorial_analysis <- function(
     param_grid = NULL, # all scenarios
     v_treatments = c("Standard of care", "human-AI collaboration"), # strategies
     wtp = 35000, # willingness to pay threshold
-    verbose = TRUE, # to print progress
+    verbose = TRUE # to print progress
 ) {
   
   # Create default parameter grid if not provided
@@ -89,7 +89,8 @@ run_factorial_analysis <- function(
     results_standalone <- f_wrapper(
       v_treatments = v_treatments,
       df_psa = df_standalone,
-      f_model = f_MM_diagnostic
+      f_model = f_MM_diagnostic,
+      human_ai_collab = FALSE
     )
     
     # Extract stand-alone outcomes
@@ -134,8 +135,6 @@ run_factorial_analysis <- function(
       # Derived characteristics
       delta_sens = param_grid$ai_sens[i] - param_grid$human_sens[i],
       delta_spec = param_grid$ai_spec[i] - param_grid$human_spec[i],
-      abs_delta_sens = abs(param_grid$ai_sens[i] - param_grid$human_sens[i]),
-      abs_delta_spec = abs(param_grid$ai_spec[i] - param_grid$human_spec[i]),
       
       # Collaborative performance (from model)
       collab_sens = df_collab$p_collab_sens[1],
@@ -209,37 +208,43 @@ create_param_grid <- function(quick = TRUE) {
 ## Analysis
 analyze_results <- function(results, delta_threshold = 10000, verbose = TRUE) {
   
-  cat("\n===== SUMMARY =====\n")
-  cat("Mean ΔICER:", mean(results$delta_icer), "\n")
-  cat("Median ΔICER:", median(results$delta_icer), "\n")
-  cat("Min ΔICER:", min(results$delta_icer), "\n")
-  cat("Max ΔICER:", max(results$delta_icer), "\n")
+  # Remove NA/infinite
+  results_clean <- results[is.finite(results$delta_icer), ]
   
-  # High impact
-  n_high <- sum(results$delta_icer > delta_threshold)
-  pct_high <- 100 * n_high / nrow(results)
-  cat("High Added Value (|ΔICER| > £", format(delta_threshold, big.mark = ","), "):\n", sep = "")
-  cat(n_high, " of ", nrow(results), " scenarios (", round(pct_high, 1), "%)\n\n", sep = "")
+  cat("\n===== SUMMARY =====\n")
+  cat("Mean ΔICER:", mean(results_clean$delta_icer), "\n")
+  cat("Median ΔICER:", median(results_clean$delta_icer), "\n")
+  cat("Min ΔICER:", min(results_clean$delta_icer), "\n")
+  cat("Max ΔICER:", max(results_clean$delta_icer), "\n")
+  
+  # High impact on ICER >10.000 difference
+  high_impact <- results_clean[results_clean$delta_icer > delta_threshold, ]
+  summary(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
+                          "rho_pos", "rho_neg", "alpha")])
+  
+  # Low impact
+  low_impact  <- results_clean[results_clean$delta_icer <= delta_threshold, ]
+  summary(low_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
+                       "rho_pos", "rho_neg", "alpha")])
   
   # Decision changes
-  n_decision <- sum(results$decision_changes, na.rm = TRUE)
-  pct_decision <- 100 * n_decision / nrow(results)
+  n_decision <- sum(results_clean$decision_changes, na.rm = TRUE)
+  pct_decision <- 100 * n_decision / nrow(results_clean)
   cat("Decision Changes at WTP:\n")
-  cat(n_decision, " of ", nrow(results), " scenarios (", round(pct_decision, 1), "%)\n\n", sep = "")
+  cat(n_decision, " of ", nrow(results_clean), " scenarios (", round(pct_decision, 1), "%)\n\n", sep = "")
 }
 
-
 ## Visualization function
-plot_results <- function(results) {
+plot_results <- function(results_clean) {
   
   # Histogram
-  p1 <- ggplot(results, aes(x = delta_icer)) +
+  p1 <- ggplot(results_clean, aes(x = delta_icer)) +
     geom_histogram(bins = 30, fill = "steelblue") +
     theme_minimal() +
     labs(title = "Distribution of ΔICER")
   
   # Heatmap example
-  p2 <- ggplot(results,
+  p2 <- ggplot(results_clean,
                aes(x = factor(ai_sens), y = factor(human_sens), fill = delta_icer)) +
     geom_tile() +
     scale_fill_viridis_c() +
@@ -258,7 +263,7 @@ results <- run_factorial_analysis(
   verbose = TRUE
 )
 
-analyze_results(results)
+results_clean <- results[is.finite(results$delta_icer), ]
 
 plot_results(results)
 
@@ -269,6 +274,7 @@ results <- run_factorial_analysis(
   param_grid = create_param_grid(quick = FALSE),
   verbose = TRUE
 )
+results_clean <- results[is.finite(results$delta_icer), ]
 
 analyze_results(results)
 
