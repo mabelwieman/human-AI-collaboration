@@ -5,7 +5,8 @@ f_wrapper <- function(
     v_treatments, # the treatment options (as.character)
     owsa = FALSE, # required for owsa output dataframe format
     owsa_wtp = 35000, # required for owsa output
-    f_model # specify model function
+    f_model, # specify model function
+    human_ai_collab = TRUE # FALSE when AI as stand-alone intervention
 ){
   n_sim <- dim(df_psa)[1] # number of simulations (as indicated in f_gen_psa()) deterministic (n_sim = 1) in case of owsa
   n_treatments <- length(v_treatments)
@@ -25,7 +26,8 @@ f_wrapper <- function(
   for(i in 1:n_sim){ # loop to run model for each row of PSA inputs
     m_out[i,] <- f_model( # model function; store results in row of results matrix
       params = df_psa[i, ], # input parameters
-      v_treatments = v_treatments # the treatment options
+      v_treatments = v_treatments, # the treatment options
+      human_ai_collab = human_ai_collab
     ) # end model function
     cat('\r', "PSA is", paste(round(i/n_sim * 100), "% done  ", sep = "")) # show progress
   } # close model loop
