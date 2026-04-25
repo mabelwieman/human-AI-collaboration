@@ -29,9 +29,9 @@ source("f_collab_accuracy.R") # function calculating joined human-AI performance
 
 ## Obtain inputs
 df_psa <- f_gen_psa(n_sim = 10000) # probabilistic inputs
-df_psa <- f_collab_accuracy(df_psa) # when human-AI collab is on
+df_psa <- f_collab_accuracy(df_psa) # works when human-AI collab is on
 df_det <- f_gen_psa(n_sim = 1) # deterministic inputs
-df_det <- f_collab_accuracy(df_det) # when human-AI collab is on
+df_det <- f_collab_accuracy(df_det) # works when human-AI collab is on
 # df_det - colMeans(df_psa) # checking whether probabilistic inputs and deterministic inputs are similar
 # (df_det - colMeans(df_psa)) / df_det # checking whether probabilistic inputs and deterministic inputs are similar
 # abs((df_det - colMeans(df_psa)) / df_det) * 100 # checking whether probabilistic inputs and deterministic inputs are similar
