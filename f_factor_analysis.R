@@ -13,7 +13,7 @@ source("f_collab_accuracy.R") # function calculating joined human-AI performance
 # load packages (and install/update if required)
 library(tidyverse)
 library(mvtnorm)
-install.packages("ggally")
+library(ggplot2)
 library(GGally)
 
 ## Factorial analysis function
@@ -120,7 +120,7 @@ run_factorial_analysis <- function(
       NA
     )
     
-    decision_changes <- sign(nmb_collab) != sign(nmb_standalone)
+    decision_changes <- (nmb_collab > 0) != (nmb_standalone > 0)
     
     ## Store the results
     results_list[[i]] <- data.frame(
@@ -241,25 +241,64 @@ analyze_results <- function(results, delta_threshold = 1000, verbose = TRUE) {
 }
 
 ## Visualization function
-plot_results <- function(results) {
-  
-  # Histogram
-  p1 <- ggplot(results, aes(x = delta_nmb)) +
-    geom_histogram(bins = 30, fill = "steelblue") +
-    theme_minimal() +
-    labs(title = "Distribution of ΔNMB")
-  
-  # Heatmap example
-  p2 <- ggplot(results,
-               aes(x = factor(ai_sens), y = factor(human_sens), fill = delta_nmb)) +
+# summarise delta nmb by each pair of parameters
+plot_nmb_heatmap <- function(data, var1, var2) {
+  data %>%
+    group_by(across(all_of(c(var1, var2)))) %>%
+    summarise(
+      mean_delta_nmb = mean(delta_nmb, na.rm = TRUE),
+      n = n(),
+      .groups = "drop"
+    ) %>%
+    ggplot(aes(x = factor(.data[[var1]]), y = factor(.data[[var2]]), 
+               fill = mean_delta_nmb)) +
     geom_tile() +
-    scale_fill_viridis_c() +
+    geom_text(aes(label = round(mean_delta_nmb, 0)), size = 3) +
+    scale_fill_viridis_c(name = "mean\nΔNMB") +
     theme_minimal() +
-    labs(title = "ΔNMB by sensitivity of human and AI")
-  
-  print(p1)
-  print(p2)
+    labs(x = var1, y = var2)
 }
+
+# all 7 parameters from factorial design
+params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")
+
+# generate all unique pairs
+param_pairs <- combn(params, 2, simplify = FALSE)
+
+# plot all 21 heatmaps
+plots <- lapply(param_pairs, function(p) {
+  plot_nmb_heatmap(results, p[1], p[2])
+})
+
+# print all
+for (p in plots) print(p)
+
+# or arrange in a grid (easier to compare)
+library(gridExtra)
+do.call(grid.arrange, c(plots, ncol = 3))
+
+# sunmarize characteristics of high impact scenarios
+params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")
+
+comparison_table <- do.call(rbind, lapply(params, function(p) {
+  tab_overall  <- prop.table(table(results[[p]])) * 100
+  tab_high     <- prop.table(table(high_impact[[p]])) * 100
+  
+  # align values in case not all levels appear in high_impact
+  all_levels <- names(tab_overall)
+  high_aligned <- tab_high[all_levels]
+  high_aligned[is.na(high_aligned)] <- 0
+  
+  data.frame(
+    parameter = p,
+    value     = all_levels,
+    overall_pct = round(as.numeric(tab_overall), 1),
+    high_impact_pct = round(as.numeric(high_aligned), 1),
+    difference = round(as.numeric(high_aligned) - as.numeric(tab_overall), 1)
+  )
+}))
+
+print(comparison_table)
 
 ## Running quick factor analysis
 grid <- create_param_grid(quick=TRUE)
@@ -269,10 +308,7 @@ results <- run_factorial_analysis(
   verbose = TRUE
 )
 
-decision_changes <- results[results$decision_changes, ]
-
 out <- analyze_results(results)
-results <- out$results
 high_impact <- out$high_impact
 low_impact <- out$low_impact
 decision_changes <- results[results$decision_changes, ]
@@ -288,7 +324,6 @@ results <- run_factorial_analysis(
 )
 
 out <- analyze_results(results)
-results <- out$results
 high_impact <- out$high_impact
 low_impact <- out$low_impact
 decision_changes <- results[results$decision_changes, ]
