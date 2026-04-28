@@ -13,6 +13,8 @@ source("f_collab_accuracy.R") # function calculating joined human-AI performance
 # load packages (and install/update if required)
 library(tidyverse)
 library(mvtnorm)
+install.packages("ggally")
+library(GGally)
 
 ## Factorial analysis function
 run_factorial_analysis <- function(
@@ -101,21 +103,22 @@ run_factorial_analysis <- function(
     icer_standalone <- results_standalone$iCER[1]
     
     ## Comparison metrics, measures how wrong modeling AI as stand-alone intervention can be
-    # Absolute difference in ICER
+    # ICER
     delta_icer <- abs(icer_collab - icer_standalone)
     
-    # Relative difference
-    rel_delta_icer <- ifelse(
-      !is.na(icer_standalone) && abs(icer_standalone) > 0,
-      delta_icer / abs(icer_standalone),
-      NA
-    )
-    
-    # NMB for decision changes
+    # NMB
     nmb_collab <- (qaly_collab - qaly_human_collab) * wtp - 
       (cost_collab - cost_human_collab)
     nmb_standalone <- (qaly_standalone - qaly_human_standalone) * wtp - 
       (cost_standalone - cost_human_standalone)
+    
+    delta_nmb <- abs(nmb_collab - nmb_standalone)
+    
+    rel_delta_nmb <- ifelse(
+      !is.na(nmb_standalone) && abs(nmb_standalone) > 0,
+      delta_nmb / abs(nmb_standalone),
+      NA
+    )
     
     decision_changes <- sign(nmb_collab) != sign(nmb_standalone)
     
@@ -154,7 +157,8 @@ run_factorial_analysis <- function(
       
       # Key metrics
       delta_icer = delta_icer,
-      rel_delta_icer = rel_delta_icer,
+      delta_nmb = delta_nmb,
+      rel_delta_nmb = rel_delta_nmb,
       decision_changes = decision_changes,
       
       stringsAsFactors = FALSE
@@ -206,50 +210,52 @@ create_param_grid <- function(quick = TRUE) {
 }
 
 ## Analysis
-analyze_results <- function(results, delta_threshold = 10000, verbose = TRUE) {
-  
-  # Remove NA/infinite
-  results_clean <- results[is.finite(results$delta_icer), ]
-  
-  cat("\n===== SUMMARY =====\n")
-  cat("Mean ΔICER:", mean(results_clean$delta_icer), "\n")
-  cat("Median ΔICER:", median(results_clean$delta_icer), "\n")
-  cat("Min ΔICER:", min(results_clean$delta_icer), "\n")
-  cat("Max ΔICER:", max(results_clean$delta_icer), "\n")
+analyze_results <- function(results, delta_threshold = 1000, verbose = TRUE) {
   
   # High impact on ICER >10.000 difference
-  high_impact <- results_clean[results_clean$delta_icer > delta_threshold, ]
+  high_impact <- results[results$delta_nmb > delta_threshold, ]
   summary(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
                           "rho_pos", "rho_neg", "alpha")])
   
   # Low impact
-  low_impact  <- results_clean[results_clean$delta_icer <= delta_threshold, ]
+  low_impact  <- results[results$delta_nmb <= delta_threshold, ]
   summary(low_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
                        "rho_pos", "rho_neg", "alpha")])
   
+  rbind(
+    high = colMeans(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")]),
+    low  = colMeans(low_impact[,  c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")])
+  )
+  
   # Decision changes
-  n_decision <- sum(results_clean$decision_changes, na.rm = TRUE)
-  pct_decision <- 100 * n_decision / nrow(results_clean)
+  n_decision <- sum(results$decision_changes, na.rm = TRUE)
+  pct_decision <- 100 * n_decision / nrow(results)
   cat("Decision Changes at WTP:\n")
-  cat(n_decision, " of ", nrow(results_clean), " scenarios (", round(pct_decision, 1), "%)\n\n", sep = "")
+  cat(n_decision, " of ", nrow(results), " scenarios (", round(pct_decision, 1), "%)\n\n", sep = "")
+  
+  return(list(
+    results = results,
+    high_impact   = high_impact,
+    low_impact    = low_impact
+  ))
 }
 
 ## Visualization function
-plot_results <- function(results_clean) {
+plot_results <- function(results) {
   
   # Histogram
-  p1 <- ggplot(results_clean, aes(x = delta_icer)) +
+  p1 <- ggplot(results, aes(x = delta_nmb)) +
     geom_histogram(bins = 30, fill = "steelblue") +
     theme_minimal() +
-    labs(title = "Distribution of ΔICER")
+    labs(title = "Distribution of ΔNMB")
   
   # Heatmap example
-  p2 <- ggplot(results_clean,
-               aes(x = factor(ai_sens), y = factor(human_sens), fill = delta_icer)) +
+  p2 <- ggplot(results,
+               aes(x = factor(ai_sens), y = factor(human_sens), fill = delta_nmb)) +
     geom_tile() +
     scale_fill_viridis_c() +
     theme_minimal() +
-    labs(title = "ΔICER by sensitivity of human and AI")
+    labs(title = "ΔNMB by sensitivity of human and AI")
   
   print(p1)
   print(p2)
@@ -263,7 +269,13 @@ results <- run_factorial_analysis(
   verbose = TRUE
 )
 
-results_clean <- results[is.finite(results$delta_icer), ]
+decision_changes <- results[results$decision_changes, ]
+
+out <- analyze_results(results)
+results <- out$results
+high_impact <- out$high_impact
+low_impact <- out$low_impact
+decision_changes <- results[results$decision_changes, ]
 
 plot_results(results)
 
@@ -274,10 +286,12 @@ results <- run_factorial_analysis(
   param_grid = create_param_grid(quick = FALSE),
   verbose = TRUE
 )
-results_clean <- results[is.finite(results$delta_icer), ]
 
-analyze_results(results)
+out <- analyze_results(results)
+results <- out$results
+high_impact <- out$high_impact
+low_impact <- out$low_impact
+decision_changes <- results[results$decision_changes, ]
 
 plot_results(results)
-
 # end of function
