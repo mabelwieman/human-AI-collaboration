@@ -163,18 +163,24 @@ plot(
 ) # plot end
 
 # info rank
-info.rank(
+library(ggplot2)
+
+plot <- info.rank(
   parameter = 1:ncol(df_psa),
   inp = createInputs(inputs = df_psa, print_is_linear_comb = FALSE),
   he = obj_bcea,
   wtp = n_wtp,
   howManyPars = 10, 
-  graph = "base"
+  graph = "ggplot2"
 )
+
+plot + 
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 0.7)) # Force the x-axis to 0.7
 
 ## Deterministic sensitivity analyses
 df_psa_owsa <- f_collab_accuracy(df_psa) # generate input parameters (min and max values for OWSA) with default n_sim
-# df_psa_owsa <- f_gen_psa() # generate input parameters when human-AI collab is off
+#df_psa_owsa <- f_gen_psa() # generate input parameters when human-AI collab is off
 df_psa_owsa <- df_psa_owsa[, apply(df_psa_owsa, 2, var, na.rm = TRUE) != 0] # only select parameters with variance > 0
 
 obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
@@ -185,7 +191,7 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
   ), # close params_range dataframe 
   params_basecase = f_collab_accuracy(df_det), # base-case parameters 
   #lapply(df_psa_owsa, mean), # alternative to f_gen_psa(n_sim = 1) = mean of psa inputs 
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  #params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB", "iQALY", "iCost", "iCER", "iNMB"), # outcomes of interest produced by FUN  
@@ -288,10 +294,13 @@ owsa_opt_strat(
   n_x_ticks = 5
 ) # owsa_opt_strat end
 
-owsa_tornado(
+plot <- owsa_tornado(
   obj_owsa_dam$owsa_iNMB,
   min_rel_diff = 0.05 # only plot parameters that lead to a relative change in the outcome greater than or equal to this value
-) # owsa_tornado end
+) +
+  scale_fill_manual(values = c("High" = "grey30", "Low" = "grey60")) +
+  theme_classic()
+plot # owsa_tornado end
 
 # owsa_tornado(
 #   obj_owsa_dam$owsa_iCER,
