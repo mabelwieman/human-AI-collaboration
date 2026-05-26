@@ -139,7 +139,7 @@ ib.plot(
   graph = "base" # uses base graphics (instead of ggplot)
 ) # ib.plot end
 
-# CEAC
+# Cost effectiveness acceptability curve
 plot(
   ceac(
     psa = obj_psa_dam, 
@@ -151,7 +151,7 @@ plot(
   points = TRUE
 ) # plot end
 
-# ELC
+# Expected loss curve
 plot(
   calc_exp_loss(
     psa = obj_psa_dam, 
@@ -162,7 +162,7 @@ plot(
   n_y_ticks = 6
 ) # plot end
 
-# info rank
+# Info rank plot
 library(ggplot2)
 
 plot <- info.rank(
@@ -428,4 +428,75 @@ df_out_det_scen <- f_wrapper(
 
 print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI
 print(df_out_det_scen[4] * 35000 - df_out_det_scen[2], digits = 10) # NMB AI
+
+## Plot for diagnostic performance across scenarios
+library(ggplot2)
+library(ggrepel)
+
+# green dots - human sens=0.85, ai sens=0.90, human spec=0.85, ai spec=0.90
+green_data <- data.frame(
+  sensitivity = c(0.85, 0.90, 0.881, 0.898, 0.853, 0.899, 0.858),
+  specificity = c(0.85, 0.90, 0.877, 0.898, 0.853, 0.899, 0.855),
+  label = c("Standard of care", "AI stand-alone", "Human-AI collaboration",
+            "Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4"),
+  color_group = "Human sens=0.85, AI sens=0.90\nHuman spec=0.85, AI spec=0.90"
+)
+
+# red dots - human sens=0.90, ai sens=0.85, human spec=0.90, ai spec=0.85
+red_data <- data.frame(
+  sensitivity = c(0.90, 0.85, 0.874, 0.852, 0.898, 0.851, 0.895),
+  specificity = c(0.90, 0.85, 0.870, 0.852, 0.897, 0.851, 0.893),
+  label = c("Standard of care", "AI stand-alone", "Human-AI collaboration",
+            "Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4"),
+  color_group = "Human sens=0.90, AI sens=0.85\nHuman spec=0.90, AI spec=0.85"
+)
+
+# blue dots - human sens=0.90, ai sens=0.85, human spec=0.85, ai spec=0.90
+blue_data <- data.frame(
+  sensitivity = c(0.90, 0.85, 0.874, 0.875, 0.898, 0.851, 0.895),
+  specificity = c(0.85, 0.90, 0.877, 0.876, 0.853, 0.899, 0.855),
+  label = c("Standard of care", "AI stand-alone", "Human-AI collaboration",
+            "Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4"),
+  color_group = "Human sens=0.90, AI sens=0.85\nHuman spec=0.85, AI spec=0.90"
+)
+
+# orange dots - human sens=0.85, ai sens=0.90, human spec=0.90, ai spec=0.85
+orange_data <- data.frame(
+  sensitivity = c(0.85, 0.90, 0.881, 0.898, 0.853, 0.899, 0.858),
+  specificity = c(0.90, 0.85, 0.877, 0.852, 0.897, 0.851, 0.893),
+  label = c("Standard of care", "AI stand-alone", "Human-AI collaboration",
+            "Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4"),
+  color_group = "Human sens=0.85, AI sens=0.90\nHuman spec=0.90, AI spec=0.85"
+)
+
+plot_data <- rbind(green_data, red_data, blue_data, orange_data)
+
+ggplot(plot_data, aes(x = sensitivity, y = specificity,
+                      color = color_group, shape = label)) +
+  geom_point(size = 4) +
+  scale_color_manual(
+    values = c(
+      "Human sens=0.85, AI sens=0.90\nHuman spec=0.85, AI spec=0.90" = "darkgreen",
+      "Human sens=0.90, AI sens=0.85\nHuman spec=0.90, AI spec=0.85" = "red",
+      "Human sens=0.90, AI sens=0.85\nHuman spec=0.85, AI spec=0.90" = "steelblue",
+      "Human sens=0.85, AI sens=0.90\nHuman spec=0.90, AI spec=0.85" = "orange"
+    ),
+    name = "Scenario set"
+  ) +
+  scale_shape_manual(
+    values = c(16, 17, 15, 18, 8, 7, 9),
+    name = "Care pathway"
+  ) +
+  scale_x_continuous(limits = c(0.84, 0.91), breaks = seq(0.84, 0.91, 0.01)) +
+  scale_y_continuous(limits = c(0.84, 0.91), breaks = seq(0.84, 0.91, 0.01)) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    panel.grid.minor = element_blank()
+  ) +
+  labs(
+    x = "Sensitivity",
+    y = "Specificity",
+    title = "Diagnostic performance across care pathways and scenarios"
+  )
 # end of script

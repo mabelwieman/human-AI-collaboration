@@ -9,7 +9,7 @@ f_wrapper <- function(
     human_ai_collab = TRUE # FALSE when AI as stand-alone intervention
 ){
   n_sim <- dim(df_psa)[1] # number of simulations (as indicated in f_gen_psa()) deterministic (n_sim = 1) in case of owsa
-  n_treatments <- length(v_treatments)
+  n_treatments <- length(v_treatments) # number of strategies
   
   m_out <- matrix( # create matrix to store results
     data = NA, 

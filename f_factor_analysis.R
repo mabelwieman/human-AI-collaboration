@@ -210,7 +210,7 @@ create_param_grid <- function(quick = TRUE) {
 }
 
 ## Analysis
-analyze_results <- function(results, delta_threshold = 1000, verbose = TRUE) {
+analyze_results <- function(results, delta_threshold = 2500, verbose = TRUE) {
   
   # High impact on ICER >10.000 difference
   high_impact <- results[results$delta_nmb > delta_threshold, ]
