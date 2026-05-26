@@ -63,37 +63,37 @@ f_gen_psa <- function(
     u_tp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 6.800, 
-        shape2 = 2.914
+        shape1 = 7.760, 
+        shape2 = 1.940
       )
-    } else {0.70},
+    } else {0.80},
 
     # assumed utility score for a true negative case, correct diagnosis and no overtreatment   
     u_tn = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 1.600, 
-        shape2 = 0.178
-      )
-    } else {0.90},
+        shape1 = 1.690, 
+        shape2 = 0.090
+        )
+    } else {0.95},
     
     # assumed utility score for a false negative case, missed diagnosis and risk of progressed disease
     u_fn = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 14.40, 
-        shape2 = 9.60
+        shape1 = 9.60, 
+        shape2 = 14.40
       )
-    } else {0.60},
+    } else {0.40},
     
     # assumed utility score for a false positive case, incorrect diagnosis and unnecessary treatment
     u_fp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
-        shape1 = 4.200, 
-        shape2 = 1.050
+        shape1 = 3.410, 
+        shape2 = 1.840
       )
-    } else {0.80},
+    } else {0.65},
     
     # assumed costs of a diagnostic test (CT scan)
     c_scan = 0,   
@@ -202,7 +202,7 @@ f_gen_psa <- function(
       )
     } else {0.00}
     
-    # discordance and concordance parameters (will be calculated)
+    # discordance and concordance parameters (will be calculated with f_collab_accuracy)
     df_psa$p_dis_human_tp_ai_fn <- NA
     df_psa$p_dis_human_fn_ai_tp <- NA
     df_psa$p_dis_human_tn_ai_fp <- NA
@@ -218,7 +218,7 @@ f_gen_psa <- function(
     df_psa$p_human_rely_ai_tn <- NA
     df_psa$p_human_rely_ai_fp <- NA
     
-    # human-AI accuracy probabilities (will be calculated)
+    # human-AI accuracy probabilities (will be calculated f_collab_accuracy)
     df_psa$p_collab_sens <- NA
     df_psa$p_collab_spec <- NA
   } # close if human_ai_collab
