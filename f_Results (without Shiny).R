@@ -28,20 +28,22 @@ source("f_wrapper.R") # function combining/wrapping the functions above
 source("f_collab_accuracy.R") # function calculating joined human-AI performance scores
 
 ## Obtain inputs
-df_psa <- f_gen_psa(n_sim = 10000) # probabilistic inputs
-df_psa <- f_collab_accuracy(df_psa) # works when human-AI collab is on
-df_det <- f_gen_psa(n_sim = 1) # deterministic inputs
-df_det <- f_collab_accuracy(df_det) # works when human-AI collab is on
+df_psa <- f_gen_psa(n_sim = 10000)          
+df_det <- f_gen_psa(n_sim = 1)              
+df_psa_inputs <- df_psa                     # raw probablistic inputs
+df_det_inputs <- df_det                     # raw deterministic inputs
+df_psa <- f_collab_accuracy(df_psa)         # add probabalistic discordance and reliance intermediate outcomes for human-AI collaboration use
+df_det <- f_collab_accuracy(df_det)         # add deterministic discordance and reliance intermediate outcomes for human-AI collaboration use
 # df_det - colMeans(df_psa) # checking whether probabilistic inputs and deterministic inputs are similar
 # (df_det - colMeans(df_psa)) / df_det # checking whether probabilistic inputs and deterministic inputs are similar
 # abs((df_det - colMeans(df_psa)) / df_det) * 100 # checking whether probabilistic inputs and deterministic inputs are similar
 
 inputs_overview <- data.frame( # dataframe to be used for OWSA
-  pars = names(df_psa), # parameter names
-  deterministic = as.numeric(df_det), # mean values
-  mean = as.numeric(lapply(df_psa, mean)), # mean values
-  min = stack(sapply(df_psa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for owsa
-  max = stack(sapply(df_psa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for owsa 
+  pars = names(df_psa_inputs), # parameter names
+  deterministic = as.numeric(df_det_inputs), # mean values
+  mean = as.numeric(lapply(df_psa_inputs, mean)), # mean values
+  min = stack(sapply(df_psa_inputs, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for owsa
+  max = stack(sapply(df_psa_inputs, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for owsa 
 ) # close params_range dataframe 
 
 write.table(inputs_overview, "clipboard", sep = "\t", row.names = FALSE, col.names = FALSE)
@@ -90,7 +92,7 @@ print(v_out_mean[4] * 25000 - v_out_mean[2], digits = 10) # NMB AI with 25,000 w
 obj_psa_dam <- make_psa_obj( # generate dampack PSA object
   cost = df_out[,1:2], # dataframe of costs
   effectiveness = df_out[,3:4], # dataframe of effects
-  parameters = df_psa, # dataframe of input parameters
+  parameters = df_psa_inputs, # dataframe of input parameters
   strategies = v_treatments, # vector of strategy names
 ) # end make_psa_obj
 
@@ -166,8 +168,8 @@ plot(
 library(ggplot2)
 
 plot <- info.rank(
-  parameter = 1:ncol(df_psa),
-  inp = createInputs(inputs = df_psa, print_is_linear_comb = FALSE),
+  parameter = 1:ncol(df_psa_inputs),
+  inp = createInputs(inputs = df_psa_inputs, print_is_linear_comb = FALSE),
   he = obj_bcea,
   wtp = n_wtp,
   howManyPars = 10, 
@@ -179,8 +181,7 @@ plot +
   scale_y_continuous(limits = c(0, 0.7)) # Force the x-axis to 0.7
 
 ## Deterministic sensitivity analyses
-df_psa_owsa <- f_collab_accuracy(df_psa) # generate input parameters (min and max values for OWSA) with default n_sim
-#df_psa_owsa <- f_gen_psa() # generate input parameters when human-AI collab is off
+df_psa_owsa <- f_gen_psa() 
 df_psa_owsa <- df_psa_owsa[, apply(df_psa_owsa, 2, var, na.rm = TRUE) != 0] # only select parameters with variance > 0
 
 obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
@@ -189,9 +190,8 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
     min = stack(sapply(df_psa_owsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for owsa
     max = stack(sapply(df_psa_owsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for owsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters 
   #lapply(df_psa_owsa, mean), # alternative to f_gen_psa(n_sim = 1) = mean of psa inputs 
-  #params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB", "iQALY", "iCost", "iCER", "iNMB"), # outcomes of interest produced by FUN  
@@ -205,8 +205,7 @@ obj_twsa_dam1 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -220,8 +219,7 @@ obj_twsa_dam2 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -235,8 +233,7 @@ obj_twsa_dam3 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -250,8 +247,7 @@ obj_twsa_dam4 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -265,8 +261,7 @@ obj_twsa_dam5 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
@@ -280,8 +275,7 @@ obj_twsa_dam6 <- run_twsa_det( # generate dampack TWSA object
     min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
     max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
   ), # close params_range dataframe 
-  params_basecase = f_collab_accuracy(df_det), # base-case parameters (n_sim = 1 provides deterministic parameters)
-  # params_basecase = f_gen_psa(n_sim = 1), # (n_sim = 1 provides deterministic parameters) when human-AI collab is off
+  params_basecase = df_det,
   nsamp = 100, # number of sets of parameter values to be generated (between min and max)
   FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_MM_diagnostic, # function that produces outcomes based on params_basecase
   outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
