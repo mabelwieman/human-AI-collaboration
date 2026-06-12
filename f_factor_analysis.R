@@ -189,7 +189,7 @@ create_param_grid <- function(quick = TRUE) {
       ai_spec = c(0.70, 0.80, 0.90),          
       rho_pos = c(-0.75, 0, 0.75),          
       rho_neg = c(-0.75, 0, 0.75),          
-      alpha = c(-2, 0, 2),                
+      alpha = c(-2, 0, 2),
       stringsAsFactors = FALSE
     )
   } else {
@@ -220,7 +220,7 @@ analyze_results <- function(results, delta_threshold = 2500, verbose = TRUE) {
   # Low impact
   low_impact  <- results[results$delta_nmb <= delta_threshold, ]
   summary(low_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
-                       "rho_pos", "rho_neg", "alpha")])
+                         "rho_pos", "rho_neg", "alpha")])
   
   rbind(
     high = colMeans(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")]),
@@ -239,6 +239,28 @@ analyze_results <- function(results, delta_threshold = 2500, verbose = TRUE) {
     low_impact    = low_impact
   ))
 }
+
+## Running quick factor analysis
+results <- run_factorial_analysis(
+  param_grid = create_param_grid(quick = TRUE),
+  verbose = TRUE
+)
+
+out <- analyze_results(results)
+high_impact <- out$high_impact
+low_impact <- out$low_impact
+decision_changes <- results[results$decision_changes, ]
+
+## Running extensive factor analysis
+#results <- run_factorial_analysis(
+#  param_grid = create_param_grid(quick = FALSE),
+#  verbose = TRUE
+#)
+
+#out <- analyze_results(results)
+#high_impact <- out$high_impact
+#low_impact <- out$low_impact
+#decision_changes <- results[results$decision_changes, ]
 
 ## Visualization function
 # summarise delta nmb by each pair of parameters
@@ -299,34 +321,4 @@ comparison_table <- do.call(rbind, lapply(params, function(p) {
 }))
 
 print(comparison_table)
-
-## Running quick factor analysis
-grid <- create_param_grid(quick=TRUE)
-
-results <- run_factorial_analysis(
-  param_grid = create_param_grid(quick = TRUE),
-  verbose = TRUE
-)
-
-out <- analyze_results(results)
-high_impact <- out$high_impact
-low_impact <- out$low_impact
-decision_changes <- results[results$decision_changes, ]
-
-plot_results(results)
-
-## Running extensive factor analysis
-grid <- create_param_grid(quick=FALSE)
-
-results <- run_factorial_analysis(
-  param_grid = create_param_grid(quick = FALSE),
-  verbose = TRUE
-)
-
-out <- analyze_results(results)
-high_impact <- out$high_impact
-low_impact <- out$low_impact
-decision_changes <- results[results$decision_changes, ]
-
-plot_results(results)
 # end of function
