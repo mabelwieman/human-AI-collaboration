@@ -3,7 +3,7 @@
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
     seed = 12345, # set random seed
-    human_ai_collab = TRUE  # include human-collaborative parameters
+    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
 ){
   set.seed(seed)
   
@@ -141,19 +141,23 @@ f_gen_psa <- function(
     
     # assumed correlation between positive cases that are challenging for the human vs the AI-based health technology 
     df_psa$rho_pos = if (psa) {
-      rbeta(
+      rtruncnorm(
         n = n_sim, 
-        shape1 = 12.00, 
-        shape2 = 12.00
+        a = -1,
+        b = 1,
+        mean = 0.50,
+        sd = 0.20
       )
     } else {0.50}
     
     # assumed correlation between negative cases that are challenging for the human vs the AI-based health technology 
     df_psa$rho_neg = if (psa) {
-      rbeta(
+      rtruncnorm(
         n = n_sim, 
-        shape1 = 12.00, 
-        shape2 = 12.00
+        a = -1,
+        b = 1,
+        mean = 0.50,
+        sd = 0.20
       )
     } else {0.50}
     
@@ -168,28 +172,28 @@ f_gen_psa <- function(
     
     # assumed responsiveness to reliance based on relative AI performance advantage 
     df_psa$beta1 = if (psa) {
-      rnorm(
+      rgamma(
         n = n_sim,
-        mean = 1.00,
-        sd = 0.20
+        shape = 25,
+        scale = 0.04
       )
     } else {1.00}
     
     # assumed responsiveness to reliance based on error complementarity
     df_psa$beta2 = if (psa) {
-      rnorm(
+      rgamma(
         n = n_sim,
-        mean = 1.00,
-        sd = 0.20
+        shape = 25,
+        scale = 0.04
       )
     } else {1.00}
     
     # assumed responsiveness to reliance based on positive AI advice
     df_psa$beta3 = if (psa) {
-      rnorm(
+      rgamma(
         n = n_sim,
-        mean = 0.10,
-        sd = 0.02
+        shape = 25,
+        scale = 0.004
       )
     } else {0.10}
     
@@ -201,26 +205,6 @@ f_gen_psa <- function(
         sd = 0.20
       )
     } else {0.00}
-    
-    # discordance and concordance parameters (will be calculated with f_collab_accuracy)
-    df_psa$p_dis_human_tp_ai_fn <- NA
-    df_psa$p_dis_human_fn_ai_tp <- NA
-    df_psa$p_dis_human_tn_ai_fp <- NA
-    df_psa$p_dis_human_fp_ai_tn <- NA
-    df_psa$p_con_tp <- NA
-    df_psa$p_con_tn <- NA
-    df_psa$p_con_fp <- NA
-    df_psa$p_con_fn <- NA
-    
-    # reliance probabilities (will be calculated)
-    df_psa$p_human_rely_ai_fn <- NA
-    df_psa$p_human_rely_ai_tp <- NA
-    df_psa$p_human_rely_ai_tn <- NA
-    df_psa$p_human_rely_ai_fp <- NA
-    
-    # human-AI accuracy probabilities (will be calculated f_collab_accuracy)
-    df_psa$p_collab_sens <- NA
-    df_psa$p_collab_spec <- NA
   } # close if human_ai_collab
   
   return(df_psa)
