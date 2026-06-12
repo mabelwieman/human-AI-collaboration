@@ -3,7 +3,7 @@
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
     seed = 12345, # set random seed
-    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
 ){
   set.seed(seed)
   

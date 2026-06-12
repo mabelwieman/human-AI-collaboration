@@ -3,7 +3,7 @@
 f_MM_diagnostic <- function(
     params, # input parameters
     v_treatments, # the treatment options: standard of care vs AI alone or Human-AI collaboration, depends on selection
-    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
 ){
   with(as.list(params), {
     
