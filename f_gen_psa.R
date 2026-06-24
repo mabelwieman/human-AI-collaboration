@@ -1,11 +1,37 @@
-# Description: Generate Probabilistic (Sensitivity) Analysis inputs function
+#' Description: Generate Probabilistic (Sensitivity) Analysis inputs function
+#'
+#' This function generates a structured data frame containing model input parameters for
+#' the probabilistic sensitivity analysis (PSA) of the economic decision tree model. 
+#' It incorporates various distributions (beta, gamma, truncated normal, and normal) to account for uncertainty in
+#' model parameters related to prediction performance, utilities, costs, and optionally discordance and reliance.
+#'
+#' @param n_sim Integer. Number of PSA simulations. Use `1` for deterministic analysis.
+#' @param seed Integer. Random seed for reproducibility.
+#' @param human_ai_collab Logical. If `TRUE`, include human–AI collaboration
+#'   parameters (`rho_pos`, `rho_neg`, `alpha`, `beta1`, `beta2`).
+#'
+#' @details
+#' The function:
+#' \itemize{
+#'   \item Sets a random seed to ensure reproducibility.
+#'   \item Generates correlated sensitivity and specificity samples for human and AI stand-alone performances.
+#'   \item Supports deterministic analysis when `n_sim = 1`.
+#'   \item Samples prediction performance, utilities, costs, and optionally discordance and reliance from appropriate probability distributions.
+#'   \item Optionally includes discordance and reliance parameters for human–AI collaboration.
+#' }
+#'
+#' @return Data frame ('df_psa') where each row corresponds to a unique set of sampled PSA parameters.
+#' 
+#' @examples
+#' # Generate a small set of PSA inputs (100 simulations)
+#' psa_inputs <- f_gen_psa(n_sim = 100, seed = 12345)
+#'
+#' # Generate deterministic inputs (single set of parameters)
+#' deterministic_inputs <- f_gen_psa(n_sim = 1, seed = 12345)
+#'
+#' @export
 
-# This function generates a structured data frame containing input parameters for 
-# probabilistic sensitivity analysis (PSA). It incorporates various distributions 
-# (beta, gamma, log-normal values) to account for uncertainty in 
-# model parameters related to diagnostic performance, utilities, and costs.
-
-source("f_sens_spec_corr.R") # helper function to generate correlated sensitivity and specificity Samples
+source("f_sens_spec_corr.R") # load helper function to generate correlated sensitivity and specificity Samples
 
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
@@ -148,7 +174,7 @@ f_gen_psa <- function(
     
     # assumed correlation between positive cases that are challenging for the human vs the AI-based health technology 
     # rho_pos determines dis/concordance, see Box 1 in manuscript
-    # in case of complementary team performance, rho_pos turns negative and ensures that concordance for tp and fn is lower and discordance is higher
+    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for tp and fn) is lower and discordance is higher
     df_psa$rho_pos = if (psa) {
       rtruncnorm(
         n = n_sim, 
@@ -161,7 +187,7 @@ f_gen_psa <- function(
     
     # assumed correlation between negative cases that are challenging for the human vs the AI-based health technology
     # rho_neg determines dis/concordance, see Box 1 in manuscript 
-    # in case of complementary team performance, rho_pos turns negative and ensures that concordance for tn and fp is lower and discordance is higher
+    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for tn and fp) is lower and discordance is higher
     df_psa$rho_neg = if (psa) {
       rtruncnorm(
         n = n_sim, 
@@ -174,8 +200,8 @@ f_gen_psa <- function(
     
     # assumed baseline trust
     # determines reliance, see Box 2 in manuscript 
-    # in case of over-reliance, alpha turns positive and ensures that the probability of reliance is higher in all cases (tp, tn, fp, fn)
-    # in case of under-reliance, alpha turns negative and ensures that the probability of reliance is lower in all cases (tp, tn, fp, fn)  
+    # in case of over-reliance, alpha is positive and ensures that the probability of reliance is higher in all cases (tp, tn, fp, fn)
+    # in case of under-reliance, alpha is negative and ensures that the probability of reliance is lower in all cases (tp, tn, fp, fn)  
     df_psa$alpha = if (psa) {
       rnorm(
         n = n_sim,
@@ -186,8 +212,8 @@ f_gen_psa <- function(
     
     # assumed appropriateness of reliance 
     # determines reliance, see Box 2 in manuscript
-    # in case of appropriate reliance, beta1 turns positive and ensures that reliance is higher in cases where the AI gave a correct advice (tp and tn) and lower where the AI gave an incorrect advice (fp and fn) 
-    # in case of inappropriate reliance, beta1 turns negative and ensures that reliance is higher in cases where the AI gave an incorrect advice (fp and fn) and lower where the AI gave a correct advice (tp and tn)
+    # in case of appropriate reliance, beta1 is positive and ensures that reliance is higher in cases where the AI gave a correct advice (tp and tn) and lower where the AI gave an incorrect advice (fp and fn) 
+    # in case of inappropriate reliance, beta1 is negative and ensures that reliance is higher in cases where the AI gave an incorrect advice (fp and fn) and lower where the AI gave a correct advice (tp and tn)
     df_psa$beta1 = if (psa) {
       rnorm(
         n = n_sim,
@@ -198,8 +224,8 @@ f_gen_psa <- function(
     
     # assumed consequences for wrong diagnosis
     # determines reliance, see Box 2 in manuscript
-    # in case the consequences of fn are worse than fp, beta3 turns positive and ensures that reliance is higher in cases where the AI gave a positive advice (fp and tp) compared to negative advice (fn and tn)
-    # in case the consequences of fp are worse than fn, beta3 turns negative and ensures that reliance is higher in cases where the AI gave a negative advice (fn and tn) compared to positive advice (fp and tp)
+    # in case the consequences of fn are worse than fp, beta3 is positive and ensures that reliance is higher in cases where the AI gave a positive advice (fp and tp) compared to negative advice (fn and tn)
+    # in case the consequences of fp are worse than fn, beta3 is negative and ensures that reliance is higher in cases where the AI gave a negative advice (fn and tn) compared to positive advice (fp and tp)
     df_psa$beta2 = if (psa) {
       rnorm(
         n = n_sim,
