@@ -1,4 +1,8 @@
-# Description: Helper function to calculate the joined human-AI performance scores
+# Description: Helper function
+
+# This helper function calculates the joined human-AI performance scores.
+# So, the sensitivity and specificity of human-AI collaboration.
+# See Box 1 and 2 of the manuscript for the same model parameter equations.
 
 f_collab_accuracy <- function(df_psa) {
   
@@ -37,33 +41,27 @@ f_collab_accuracy <- function(df_psa) {
   
     # Calculate reliance probabilities using logistic formula
     df_psa$p_human_rely_ai_fn[i] <- inv_logit(  # probability human follows AI which is fn
-      df_psa$alpha[i] + 
-        df_psa$beta1[i] * (df_psa$p_ai_sens[i] - df_psa$p_human_sens[i]) +
-        df_psa$beta2[i] * (1 - df_psa$rho_pos[i]) / 2 +
-        df_psa$epsilon[i] 
+      df_psa$alpha[i] - 
+        df_psa$beta1[i] -
+        df_psa$beta2[i]
     )
   
     df_psa$p_human_rely_ai_tp[i] <- inv_logit( # probability human follows AI which is tp
-      df_psa$alpha[i] + 
-        df_psa$beta1[i] * (df_psa$p_ai_sens[i] - df_psa$p_human_sens[i]) +
-        df_psa$beta2[i] * (1 - df_psa$rho_pos[i]) / 2 +
-        df_psa$beta3[i] +
-        df_psa$epsilon[i] 
+      df_psa$alpha[i] +
+        df_psa$beta1[i] +
+        df_psa$beta2[i]
     )
   
     df_psa$p_human_rely_ai_fp[i] <- inv_logit( # probability human follows AI which is fp
-      df_psa$alpha[i] + 
-        df_psa$beta1[i] * (df_psa$p_ai_spec[i] - df_psa$p_human_spec[i]) +
-        df_psa$beta2[i] * (1 - df_psa$rho_neg[i]) / 2 +
-        df_psa$beta3[i] +
-        df_psa$epsilon[i] 
+      df_psa$alpha[i] -
+        df_psa$beta1[i] +
+        df_psa$beta2[i] 
     )
     
     df_psa$p_human_rely_ai_tn[i] <- inv_logit( # probability human follows AI which is tn
-      df_psa$alpha[i] + 
-        df_psa$beta1[i] * (df_psa$p_ai_spec[i] - df_psa$p_human_spec[i]) +
-        df_psa$beta2[i] * (1 - df_psa$rho_neg[i]) / 2 +
-        df_psa$epsilon[i] 
+      df_psa$alpha[i] +
+        df_psa$beta1[i] -
+        df_psa$beta2[i]
     )
   } # close for loop
   
