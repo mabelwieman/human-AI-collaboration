@@ -1,4 +1,8 @@
-# Description: factorial analysis
+# Description: Factorial analysis function
+
+# This function shows an additional analysis,
+# where seven important input parameters (p_human_sens, p_human_spec, p_ai_sens, p_ai_spec, ρpos, ρneg, α) 
+# were varied across five plausible values each.
 
 # clear workspace
 rm(list = ls()) # clear objects from workspace
@@ -59,6 +63,8 @@ run_factorial_analysis <- function(
     df_collab$rho_pos <- param_grid$rho_pos[i]
     df_collab$rho_neg <- param_grid$rho_neg[i]
     df_collab$alpha <- param_grid$alpha[i]
+    df_collab$beta1 <- param_grid$beta1[i]
+    df_collab$beta2 <- param_grid$beta2[i]
     
     # Recalculate collaboration accuracy scores
     df_collab <- f_collab_accuracy(df_collab)
@@ -134,6 +140,8 @@ run_factorial_analysis <- function(
       rho_pos = param_grid$rho_pos[i],
       rho_neg = param_grid$rho_neg[i],
       alpha = param_grid$alpha[i],
+      beta1 = param_grid$beta1[i],
+      beta2 = param_grid$beta2[i],
       
       # Derived characteristics
       delta_sens = param_grid$ai_sens[i] - param_grid$human_sens[i],
@@ -183,25 +191,29 @@ create_param_grid <- function(quick = TRUE) {
   
   if (quick) {
     grid <- expand.grid(
-      human_sens = c(0.70, 0.80, 0.90),
-      human_spec = c(0.70, 0.80, 0.90),
-      ai_sens = c(0.70, 0.80, 0.90),      
-      ai_spec = c(0.70, 0.80, 0.90),          
-      rho_pos = c(-0.75, 0, 0.75),          
-      rho_neg = c(-0.75, 0, 0.75),          
+      human_sens = c(0.50, 0.70, 0.90),
+      human_spec = c(0.50, 0.70, 0.90),
+      ai_sens = c(0.50, 0.70, 0.90),      
+      ai_spec = c(0.50, 0.70, 0.90),          
+      rho_pos = c(-0.95, 0, 0.95),          
+      rho_neg = c(-0.95, 0, 0.95),          
       alpha = c(-2, 0, 2),
+      beta1 = c(-2, 0, 2),
+      beta2 = c(-2, 0, 2),
       stringsAsFactors = FALSE
     )
   } else {
     # Extended grid: more comprehensive
     grid <- expand.grid(
-      human_sens = c(0.70, 0.75, 0.80, 0.85, 0.90),
-      human_spec = c(0.70, 0.75, 0.80, 0.85, 0.90),
-      ai_sens = c(0.70, 0.75, 0.80, 0.85, 0.90),
-      ai_spec = c(0.70, 0.75, 0.80, 0.85, 0.90),
-      rho_pos = c(-0.75, -0.25, 0, 0.25, 0.75),
-      rho_neg = c(-0.75, -0.25, 0, 0.25, 0.75),
+      human_sens = c(0.50, 0.60, 0.70, 0.80, 0.90),
+      human_spec = c(0.50, 0.60, 0.70, 0.80, 0.90),
+      ai_sens = c(0.50, 0.60, 0.70, 0.80, 0.90),
+      ai_spec = c(0.50, 0.60, 0.70, 0.80, 0.90),
+      rho_pos = c(-0.95, -0.50, 0, 0.50, 0.95),
+      rho_neg = c(-0.95, -0.50, 0, 0.50, 0.95),
       alpha = c(-2, -1, 0, 1, 2),
+      beta1 = c(-2, -1, 0, 1, 2),
+      beta2 = c(-2, -1, 0, 1, 2),
       stringsAsFactors = FALSE
     )
   }
@@ -210,21 +222,21 @@ create_param_grid <- function(quick = TRUE) {
 }
 
 ## Analysis
-analyze_results <- function(results, delta_threshold = 2500, verbose = TRUE) {
+analyze_results <- function(results, delta_threshold = 4710, verbose = TRUE) {
   
   # High impact on ICER >10.000 difference
   high_impact <- results[results$delta_nmb > delta_threshold, ]
   summary(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
-                          "rho_pos", "rho_neg", "alpha")])
+                          "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
   
   # Low impact
   low_impact  <- results[results$delta_nmb <= delta_threshold, ]
   summary(low_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
-                         "rho_pos", "rho_neg", "alpha")])
+                         "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
   
   rbind(
-    high = colMeans(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")]),
-    low  = colMeans(low_impact[,  c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")])
+    high = colMeans(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")]),
+    low  = colMeans(low_impact[,  c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
   )
   
   # Decision changes
@@ -252,15 +264,15 @@ low_impact <- out$low_impact
 decision_changes <- results[results$decision_changes, ]
 
 ## Running extensive factor analysis
-#results <- run_factorial_analysis(
-#  param_grid = create_param_grid(quick = FALSE),
-#  verbose = TRUE
-#)
+results <- run_factorial_analysis(
+  param_grid = create_param_grid(quick = FALSE),
+  verbose = TRUE
+)
 
-#out <- analyze_results(results)
-#high_impact <- out$high_impact
-#low_impact <- out$low_impact
-#decision_changes <- results[results$decision_changes, ]
+out <- analyze_results(results)
+high_impact <- out$high_impact
+low_impact <- out$low_impact
+decision_changes <- results[results$decision_changes, ]
 
 ## Visualization function
 # summarise delta nmb by each pair of parameters
@@ -282,7 +294,7 @@ plot_nmb_heatmap <- function(data, var1, var2) {
 }
 
 # all 7 parameters from factorial design
-params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")
+params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")
 
 # generate all unique pairs
 param_pairs <- combn(params, 2, simplify = FALSE)
@@ -299,8 +311,8 @@ for (p in plots) print(p)
 library(gridExtra)
 do.call(grid.arrange, c(plots, ncol = 3))
 
-# sunmarize characteristics of high impact scenarios
-params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha")
+# summarize characteristics of high impact scenarios
+params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")
 
 comparison_table <- do.call(rbind, lapply(params, function(p) {
   tab_overall  <- prop.table(table(results[[p]])) * 100
