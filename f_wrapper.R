@@ -1,5 +1,9 @@
 # Description: Wrapper function 
 
+# This function serves as a wrapper for conducting sensitivity analyses using the `dampack` package. 
+# It runs the `f_MM_diagnostic()` function with a given set of parameters and structures the results 
+# for cost-effectiveness analysis, including incremental outcomes.
+
 f_wrapper <- function(
     df_psa, # psa input dataframe
     v_treatments, # the treatment options (as.character)
@@ -8,6 +12,14 @@ f_wrapper <- function(
     f_model, # specify model function
     human_ai_collab = TRUE # FALSE when you want to model AI as stand-alone intervention
 ){
+  
+  if (human_ai_collab &&
+      !all(c("p_collab_sens", "p_collab_spec") %in% names(df_psa))) {
+    
+    df_psa <- f_collab_accuracy(df_psa)
+    
+  }
+  
   n_sim <- dim(df_psa)[1] # number of simulations (as indicated in f_gen_psa()) deterministic (n_sim = 1) in case of owsa
   n_treatments <- length(v_treatments) # number of strategies
   
@@ -48,5 +60,5 @@ f_wrapper <- function(
     df_out <- as.data.frame(m_out) # convert matrix to dataframe
   } # close if statement  
   
-  return(df_out)
+  return(df_out) # data frame with cost-effectiveness results, including treatment strategy, quality-adjusted life-years, total cost, net monetary benefit, and incrment outcomes
 } # end of function
