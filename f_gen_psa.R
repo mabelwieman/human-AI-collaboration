@@ -1,8 +1,15 @@
-# Description: Generate Probabilistic (Sensitivity) Analysis inputs function 
+# Description: Generate Probabilistic (Sensitivity) Analysis inputs function
+
+# This function generates a structured data frame containing input parameters for 
+# probabilistic sensitivity analysis (PSA). It incorporates various distributions 
+# (beta, gamma, log-normal values) to account for uncertainty in 
+# model parameters related to diagnostic performance, utilities, and costs.
+
+source("f_sens_spec_corr.R") # helper function to generate correlated sensitivity and specificity Samples
 
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
-    seed = 12345, # set random seed
+    seed = 12345, # set random seed for reproducability
     human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
 ){
   set.seed(seed)
@@ -10,11 +17,35 @@ f_gen_psa <- function(
   # probabilistic or deterministic
   if(n_sim > 1) {psa <- TRUE} else {psa <- FALSE} 
   
-  # open PSA input parameter dataframe
+  # generate correlated human sensitivity/specificity
+  human_perf <- generate_sp_se_cor(
+      n = n_sim,
+      mean_sens = 0.70,
+      mean_spec = 0.70,
+      sd_sens   = 0.14,
+      sd_spec   = 0.14,
+      rho       = -0.30,
+      is_psa = psa,
+      seed = seed
+    )
+  
+  # generate correlated AI sensitivity/specificity
+  ai_perf <- generate_sp_se_cor(
+      n = n_sim,
+      mean_sens = 0.80,
+      mean_spec = 0.80,
+      sd_sens   = 0.16,
+      sd_spec   = 0.16,
+      rho       = -0.30,
+      is_psa = psa,
+      seed = seed
+    )
+  
+  # open PSA input parameter dataframe where each row corresponds to a unique set of samples PSA parameters
   df_psa <- data.frame( 
     
     ## Decision tree probabilities vectors with length n_sim 
-    # probability that an individual in the hypothetical patient population has the disease
+    # assumed probability that an individual in the hypothetical patient population has the disease
     p_prev = if(psa == TRUE) { 
       rbeta(
         n = n_sim,
@@ -23,41 +54,17 @@ f_gen_psa <- function(
       )
     } else {0.50}, 
   
-    # probability that the human gives a positive judgement when the patient truly has the disease
-    p_human_sens = if(psa == TRUE) {
-      rbeta(
-        n = n_sim,
-        shape1 = 4.4625, 
-        shape2 = 0.7875
-      )
-    } else {0.85},
+    # assumed probability that the human gives a positive judgement when the patient truly has the disease
+    p_human_sens = human_perf$sensitivity,
     
-    # probability that the human gives a negative judgement when the patient does not have the disease 
-    p_human_spec = if(psa == TRUE) {
-      rbeta(
-        n = n_sim,
-        shape1 = 4.4625, 
-        shape2 = 0.7875
-      )
-    } else {0.85},
+    # assumed probability that the human gives a negative judgement when the patient does not have the disease 
+    p_human_spec = human_perf$specificity,
     
-    # probability that the AI-based health technology gives a positive judgement when the patient truly has the disease (assumption: AI has higher sensitivity than human)
-    p_ai_sens = if(psa == TRUE) {
-      rbeta(
-        n = n_sim,
-        shape1 = 1.600, 
-        shape2 = 0.178
-      )
-    } else {0.90},
+    # assumed probability that the AI-based health technology gives a positive judgement when the patient truly has the disease 
+    p_ai_sens = ai_perf$sensitivity,
 
-    # probability that the AI-based health technology gives a negative judgement when the patient does not have the disease (assumption: AI has lower specificity than human)       
-    p_ai_spec = if(psa == TRUE) {
-      rbeta(
-        n = n_sim,
-        shape1 = 1.600, 
-        shape2 = 0.178
-      )
-    } else {0.90},
+    # assumed probability that the AI-based health technology gives a negative judgement when the patient does not have the disease        
+    p_ai_spec = ai_perf$specificity,
     
     # assumed utility score for a true positive case, correct diagnosis and reduced symptoms
     u_tp = if(psa == TRUE) {
@@ -140,6 +147,8 @@ f_gen_psa <- function(
   if (human_ai_collab == TRUE) { 
     
     # assumed correlation between positive cases that are challenging for the human vs the AI-based health technology 
+    # rho_pos determines dis/concordance, see Box 1 in manuscript
+    # in case of complementary team performance, rho_pos turns negative and ensures that concordance for tp and fn is lower and discordance is higher
     df_psa$rho_pos = if (psa) {
       rtruncnorm(
         n = n_sim, 
@@ -150,7 +159,9 @@ f_gen_psa <- function(
       )
     } else {0.50}
     
-    # assumed correlation between negative cases that are challenging for the human vs the AI-based health technology 
+    # assumed correlation between negative cases that are challenging for the human vs the AI-based health technology
+    # rho_neg determines dis/concordance, see Box 1 in manuscript 
+    # in case of complementary team performance, rho_pos turns negative and ensures that concordance for tn and fp is lower and discordance is higher
     df_psa$rho_neg = if (psa) {
       rtruncnorm(
         n = n_sim, 
@@ -162,6 +173,9 @@ f_gen_psa <- function(
     } else {0.50}
     
     # assumed baseline trust
+    # determines reliance, see Box 2 in manuscript 
+    # in case of over-reliance, alpha turns positive and ensures that the probability of reliance is higher in all cases (tp, tn, fp, fn)
+    # in case of under-reliance, alpha turns negative and ensures that the probability of reliance is lower in all cases (tp, tn, fp, fn)  
     df_psa$alpha = if (psa) {
       rnorm(
         n = n_sim,
@@ -170,41 +184,30 @@ f_gen_psa <- function(
       )
     } else {0.00}
     
-    # assumed responsiveness to reliance based on relative AI performance advantage 
+    # assumed appropriateness of reliance 
+    # determines reliance, see Box 2 in manuscript
+    # in case of appropriate reliance, beta1 turns positive and ensures that reliance is higher in cases where the AI gave a correct advice (tp and tn) and lower where the AI gave an incorrect advice (fp and fn) 
+    # in case of inappropriate reliance, beta1 turns negative and ensures that reliance is higher in cases where the AI gave an incorrect advice (fp and fn) and lower where the AI gave a correct advice (tp and tn)
     df_psa$beta1 = if (psa) {
-      rgamma(
-        n = n_sim,
-        shape = 25,
-        scale = 0.04
-      )
-    } else {1.00}
-    
-    # assumed responsiveness to reliance based on error complementarity
-    df_psa$beta2 = if (psa) {
-      rgamma(
-        n = n_sim,
-        shape = 25,
-        scale = 0.04
-      )
-    } else {1.00}
-    
-    # assumed responsiveness to reliance based on positive AI advice
-    df_psa$beta3 = if (psa) {
-      rgamma(
-        n = n_sim,
-        shape = 25,
-        scale = 0.004
-      )
-    } else {0.10}
-    
-    # assumed random error term
-    df_psa$epsilon = if (psa) {
       rnorm(
         n = n_sim,
         mean = 0.00,
-        sd = 0.20
+        sd = 0.00
       )
     } else {0.00}
+    
+    # assumed consequences for wrong diagnosis
+    # determines reliance, see Box 2 in manuscript
+    # in case the consequences of fn are worse than fp, beta3 turns positive and ensures that reliance is higher in cases where the AI gave a positive advice (fp and tp) compared to negative advice (fn and tn)
+    # in case the consequences of fp are worse than fn, beta3 turns negative and ensures that reliance is higher in cases where the AI gave a negative advice (fn and tn) compared to positive advice (fp and tp)
+    df_psa$beta2 = if (psa) {
+      rnorm(
+        n = n_sim,
+        mean = 0.00,
+        sd = 0.00
+      )
+    } else {0.00}
+    
   } # close if human_ai_collab
   
   return(df_psa)
