@@ -1,22 +1,22 @@
 # Description: Analyses results
 
-# This script shows the deterministic and probabilistic (cost-)effectiveness results. 
-# Probabilistic sensitivity analysis was performed with 10,000 iterations, 
-# results were visualised in a cost-effectiveness plane and cost-effectiveness acceptability curve. 
-# One-way sensitivity analyses were performed to assess the impact of input parameters on the estimated net monetary benefit (NMB),
-# results were visualized with tornado plots.
-# Value-of-information analysis for examining the consequences of uncertainty were performed and displayed in expected loss curves.
-# Scenario analyses were performed to explore the impact of discordance and reliance.
+# This script shows the deterministic and probabilistic (cost-)effectiveness results and related uncertainty of the simulation study.
 
-# treatment strategies.
+#' Specifically, the script:
+#'   1. Generates deterministic and probabilistic (with 10,0000 iterations) model inputs.
+#'   2. Runs deterministic and probabilistic cost-effectiveness analyses.
+#'   3. Runs value-of-information analyses.
+#'   4. Runs scenario analyses.
+#'   5. Runs factorial analyses.
 
 ## Setup
 options(scipen = 999)
 
 # load packages (and install/update if required)
 packages <- c("dampack", "BCEA", # required for generic purposes
-              #"testthat", # required for testing purposes
-              "matrixStats", "mc2d", "truncnorm") # required for model specific purposes
+              "testthat", # required for testing purposes
+              "matrixStats", "mc2d", "truncnorm",
+              "ggplot2", "ggrepel", "tidyverse", "gridExtra") # required for model specific purposes
 source("f_packages.R") # function to install/update packages 
 f_packages(packages = packages)
 suppressPackageStartupMessages(lapply(packages, require, character.only = TRUE))  # load packages
@@ -37,7 +37,7 @@ source("f_economic_model.R") # function to calculate results
 source("f_wrapper.R") # function combining/wrapping the functions above 
 source("f_collab_prediction.R") # function calculating joined human-AI performance scores
 
-## Obtain inputs
+# 1. Obtain inputs ------------------------------------------------------
 df_psa <- f_gen_psa(n_sim = 10000)          
 df_det <- f_gen_psa(n_sim = 1)              
 df_psa_inputs <- df_psa                     # raw probablistic inputs
@@ -58,7 +58,7 @@ inputs_overview <- data.frame( # dataframe to be used for OWSA
 
 write.table(inputs_overview, "clipboard", sep = "\t", row.names = FALSE, col.names = FALSE)
 
-## Obtain results
+# 2. Run deterministic and probabilistic analyses ------------------------------------------------------
 # Deterministic results
 df_out_det <- f_wrapper(
   v_treatments = v_treatments, # the treatment options
@@ -166,121 +166,6 @@ plot(
   frontier = TRUE,
   points = TRUE
 ) # plot end
-
-# Expected loss curve
-plot(
-  calc_exp_loss(
-    psa = obj_psa_dam, 
-    wtp = v_wtp
-  ), # calc_exp_loss end
-  currency = n_currency,
-  n_x_ticks = 8, 
-  n_y_ticks = 6
-) # plot end
-
-# Info rank plot
-library(ggplot2)
-
-plot <- info.rank(
-  parameter = 1:ncol(df_psa_inputs),
-  inp = createInputs(inputs = df_psa_inputs, print_is_linear_comb = FALSE),
-  he = obj_bcea,
-  wtp = n_wtp,
-  howManyPars = 10, 
-  graph = "ggplot2"
-)
-
-plot + 
-  theme_classic() +
-  scale_y_continuous(limits = c(0, 0.7)) # Force the x-axis to 0.7
-
-# Group-based EVPPI
-inp <- createInputs(
-  inputs = df_psa_inputs,
-  print_is_linear_comb = FALSE
-)
-
-# Index against inp$mat column names, not df_psa_inputs
-groups <- list(
-  "Prediction performance" =
-    which(colnames(inp$mat) %in%
-            c("p_prev",
-              "p_human_sens", "p_human_spec",
-              "p_ai_sens", "p_ai_spec")),
-  
-  "Utilities" =
-    which(colnames(inp$mat) %in%
-            c("u_tp", "u_tn", "u_fn", "u_fp")),
-  
-  "Costs" =
-    which(colnames(inp$mat) %in%
-            c("c_ai", "c_tp", "c_fn", "c_fp")),
-  
-  "Discordance" =    # this needs to be removed when modeling AI as stand-alone intervention
-    which(colnames(inp$mat) %in%
-            c("rho_pos", "rho_neg",
-              "p_human_sens", "p_human_spec",
-              "p_ai_sens", "p_ai_spec")),
-  
-  "Reliance" =      # this needs to be removed when modeling AI as stand-alone intervention
-    which(colnames(inp$mat) %in%
-            c("alpha"))
-)
-
-evppi_groups <- lapply(groups, function(idx) {
-  
-  evppi(
-    he = obj_bcea,
-    param_idx = idx,
-    input = inp$mat,
-    wtp = n_wtp
-  )
-  
-})
-
-df_evppi_long <- do.call(
-  rbind,
-  lapply(seq_along(evppi_groups), function(i) {
-    
-    data.frame(
-      group = names(evppi_groups)[i],
-      wtp   = evppi_groups[[i]]$k,
-      evppi = evppi_groups[[i]]$evppi
-    )
-    
-  })
-)
-
-library(ggplot2)
-
-ggplot(
-  df_evppi_long,
-  aes(
-    x = wtp,
-    y = evppi,
-    linetype = group
-  )
-) +
-  geom_line(linewidth = 1.2, colour = "black") +
-  scale_linetype_manual(
-    values = c(
-      "Prediction performance" = "solid",
-      "Discordance"            = "dashed",
-      "Reliance"               = "dotted",
-      "Utilities"              = "dotdash",
-      "Costs"                  = "longdash"
-    )
-  ) +
-  theme_classic(base_size = 12) +
-  theme(
-    legend.position  = "right",
-    legend.key.width = unit(1.5, "cm")  # makes linetype patterns visible in legend
-  ) +
-  labs(
-    x        = "Willingness-to-pay (£)",
-    y        = "EVPPI (£)",
-    linetype = "Parameter group"
-  )
 
 ## Deterministic sensitivity analyses
 df_psa_owsa <- df_psa_inputs 
@@ -456,7 +341,119 @@ plot(obj_twsa_dam6$twsa_NMB)
 #   )
 # )
 
-## Scenario analyses
+# 3. Run value-of-information analyses analyses ------------------------------------------------------
+# Expected loss curve
+plot(
+  calc_exp_loss(
+    psa = obj_psa_dam, 
+    wtp = v_wtp
+  ), # calc_exp_loss end
+  currency = n_currency,
+  n_x_ticks = 8, 
+  n_y_ticks = 6
+) # plot end
+
+# Info rank plot
+plot <- info.rank(
+  parameter = 1:ncol(df_psa_inputs),
+  inp = createInputs(inputs = df_psa_inputs, print_is_linear_comb = FALSE),
+  he = obj_bcea,
+  wtp = n_wtp,
+  howManyPars = 10, 
+  graph = "ggplot2"
+)
+
+plot + 
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 0.7)) # Force the x-axis to 0.7
+
+# Group-based EVPPI
+inp <- createInputs(
+  inputs = df_psa_inputs,
+  print_is_linear_comb = FALSE
+)
+
+# Index against inp$mat column names, not df_psa_inputs
+groups <- list(
+  "Prediction performance" =
+    which(colnames(inp$mat) %in%
+            c("p_prev",
+              "p_human_sens", "p_human_spec",
+              "p_ai_sens", "p_ai_spec")),
+  
+  "Utilities" =
+    which(colnames(inp$mat) %in%
+            c("u_tp", "u_tn", "u_fn", "u_fp")),
+  
+  "Costs" =
+    which(colnames(inp$mat) %in%
+            c("c_ai", "c_tp", "c_fn", "c_fp")),
+  
+  "Discordance" =    # this needs to be removed when modeling AI as stand-alone intervention
+    which(colnames(inp$mat) %in%
+            c("rho_pos", "rho_neg",
+              "p_human_sens", "p_human_spec",
+              "p_ai_sens", "p_ai_spec")),
+  
+  "Reliance" =      # this needs to be removed when modeling AI as stand-alone intervention
+    which(colnames(inp$mat) %in%
+            c("alpha"))
+)
+
+evppi_groups <- lapply(groups, function(idx) {
+  
+  evppi(
+    he = obj_bcea,
+    param_idx = idx,
+    input = inp$mat,
+    wtp = n_wtp
+  )
+  
+})
+
+df_evppi_long <- do.call(
+  rbind,
+  lapply(seq_along(evppi_groups), function(i) {
+    
+    data.frame(
+      group = names(evppi_groups)[i],
+      wtp   = evppi_groups[[i]]$k,
+      evppi = evppi_groups[[i]]$evppi
+    )
+    
+  })
+)
+
+ggplot(
+  df_evppi_long,
+  aes(
+    x = wtp,
+    y = evppi,
+    linetype = group
+  )
+) +
+  geom_line(linewidth = 1.2, colour = "black") +
+  scale_linetype_manual(
+    values = c(
+      "Prediction performance" = "solid",
+      "Discordance"            = "dashed",
+      "Reliance"               = "dotted",
+      "Utilities"              = "dotdash",
+      "Costs"                  = "longdash"
+    )
+  ) +
+  theme_classic(base_size = 12) +
+  theme(
+    legend.position  = "right",
+    legend.key.width = unit(1.5, "cm")  # makes linetype patterns visible in legend
+  ) +
+  labs(
+    x        = "Willingness-to-pay (£)",
+    y        = "EVPPI (£)",
+    linetype = "Parameter group"
+  )
+
+# 4. Run scenario analyses ------------------------------------------------------
 # 1 low discordance, high trust (over-reliance)
 df_det_scen <- f_gen_psa(n_sim = 1)
 df_det_scen$rho_neg <- 0.95
@@ -690,9 +687,6 @@ print(df_out_det_scen[4] * 25000 - df_out_det_scen[2], digits = 10) # NMB AI wit
 print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
 
 ## Plot for prediction performance across scenarios
-library(ggplot2)
-library(ggrepel)
-
 # pink dots - scenarios for baseline trust in AI
 pink_data <- data.frame(
   sensitivity = c(0.788, 0.788, 0.712,  0.712),
@@ -756,20 +750,9 @@ ggplot(plot_data,
   theme_minimal()
 
 
-# Description: Scenario analyses and faceted prediction performance visualization
-#
-# This script runs the discordance/reliance scenario analyses across multiple
-# human/AI performance profiles, and visualizes the resulting sensitivity and
-# specificity in a faceted plot (one panel per performance profile).
-
-## Setup
-library(tidyverse)
-library(ggplot2)
-library(ggrepel)
-
+# Additional plot for prediction performance across scenarios of all stand-alone input performance scores
 v_treatments <- c("Standard of care", "human-AI collaboration")
 
-## Define scenarios (discordance x reliance)
 scenario_grid <- tribble(
   ~scenario_id, ~label,                                  ~rho_pos, ~rho_neg, ~alpha, ~beta1, ~beta2,
   1, "1. Low discordance, over-reliance",                 0.95,     0.95,     2.00,   0.00,   0.00,
@@ -784,7 +767,6 @@ scenario_grid <- tribble(
   12, "12. High discordance, FP worse than FN",          -0.95,    -0.95,     0.00,   0.00,  -2.00
 )
 
-## Define performance profiles (human/AI sens-spec combinations)
 performance_profiles <- tribble(
   ~profile_id, ~profile_label,                                          ~human_sens, ~human_spec, ~ai_sens, ~ai_spec,
   1, "Human sens=0.70, spec=0.70\nAI sens=0.80, spec=0.80",              0.70,        0.70,        0.80,     0.80,
@@ -794,7 +776,7 @@ performance_profiles <- tribble(
   5, "Human sens=0.80, spec=0.80\nAI sens=0.80, spec=0.80",              0.80,        0.80,        0.80,     0.80
 )
 
-## Run all scenario x profile combinations
+# Run all scenario x profile combinations
 run_scenario <- function(human_sens, human_spec, ai_sens, ai_spec,
                          rho_pos, rho_neg, alpha, beta1, beta2) {
   
@@ -996,12 +978,11 @@ p <- ggplot() +
 p
 
 
-# Description: Factorial analysis function
-
+# 5. Run factorial analyses ------------------------------------------------------
 # This function shows an additional analysis,
 # where seven important input parameters (p_human_sens, p_human_spec, p_ai_sens, p_ai_spec, ρpos, ρneg, α) 
 # were varied across five plausible values each.
-## Factorial analysis function
+
 run_factorial_analysis <- function(
     param_grid = NULL, # all scenarios
     v_treatments = c("Standard of care", "human-AI collaboration"), # strategies
@@ -1289,7 +1270,6 @@ plots <- lapply(param_pairs, function(p) {
 for (p in plots) print(p)
 
 # or arrange in a grid (easier to compare)
-library(gridExtra)
 do.call(grid.arrange, c(plots, ncol = 3))
 
 # summarize characteristics of high impact scenarios
