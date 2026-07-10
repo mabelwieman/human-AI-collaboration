@@ -3,7 +3,8 @@
 #' This function generates a structured data frame containing model input parameters for
 #' the probabilistic sensitivity analysis (PSA) of the economic decision tree model. 
 #' It incorporates various distributions (beta, gamma, truncated normal, and normal) to account for uncertainty in
-#' model parameters related to prediction performance, utilities, costs, and optionally discordance and reliance.
+#' model parameters related to prediction performance, utilities, costs, and optionally discordance and reliance 
+#' when modeling human-AI collaboration instead of AI as stand-alone intervention.
 #'
 #' @param n_sim Integer. Number of PSA simulations. Use `1` for deterministic analysis.
 #' @param seed Integer. Random seed for reproducibility.
@@ -16,7 +17,7 @@
 #'   \item Sets a random seed to ensure reproducibility.
 #'   \item Generates correlated sensitivity and specificity samples for human and AI stand-alone performances.
 #'   \item Supports deterministic analysis when `n_sim = 1`.
-#'   \item Samples prediction performance, utilities, costs, and optionally discordance and reliance from appropriate probability distributions.
+#'   \item Samples disease prevalence, prediction performance, utilities, and costs from appropriate probability distributions.
 #'   \item Optionally includes discordance and reliance parameters for human–AI collaboration.
 #' }
 #'
@@ -35,8 +36,8 @@ source("f_sens_spec_corr.R") # load helper function to generate correlated sensi
 
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
-    seed = 12345, # set random seed for reproducability
-    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
+    seed = 12345, # set random seed for reproducibility
+    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
 ){
   set.seed(seed)
   
@@ -70,8 +71,9 @@ f_gen_psa <- function(
   # open PSA input parameter dataframe where each row corresponds to a unique set of samples PSA parameters
   df_psa <- data.frame( 
     
-    ## Decision tree probabilities vectors with length n_sim 
+    ## decision tree probabilities vectors with length n_sim 
     # assumed probability that an individual in the hypothetical patient population has the disease
+    # beta distribution used because probability is bounded between 0 and 1.
     p_prev = if(psa == TRUE) { 
       rbeta(
         n = n_sim,
@@ -92,7 +94,7 @@ f_gen_psa <- function(
     # assumed probability that the AI-based health technology gives a negative judgement when the patient does not have the disease        
     p_ai_spec = ai_perf$specificity,
     
-    # assumed utility score for a true positive case, correct diagnosis and reduced symptoms
+    # assumed utility score for a true positive case, correct prediction and reduced symptoms
     u_tp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
@@ -101,7 +103,7 @@ f_gen_psa <- function(
       )
     } else {0.80},
 
-    # assumed utility score for a true negative case, correct diagnosis and no overtreatment   
+    # assumed utility score for a true negative case, correct prediction and no overtreatment   
     u_tn = if(psa == TRUE) {
       rbeta(
         n = n_sim,
@@ -110,7 +112,7 @@ f_gen_psa <- function(
         )
     } else {0.95},
     
-    # assumed utility score for a false negative case, missed diagnosis and risk of progressed disease
+    # assumed utility score for a false negative case, missed prediction and risk of progressed disease
     u_fn = if(psa == TRUE) {
       rbeta(
         n = n_sim,
@@ -119,7 +121,7 @@ f_gen_psa <- function(
       )
     } else {0.40},
     
-    # assumed utility score for a false positive case, incorrect diagnosis and unnecessary treatment
+    # assumed utility score for a false positive case, incorrect prediction and unnecessary treatment
     u_fp = if(psa == TRUE) {
       rbeta(
         n = n_sim,
@@ -128,7 +130,8 @@ f_gen_psa <- function(
       )
     } else {0.65},
     
-    # assumed costs of a diagnostic test (CT scan)
+    # assumed costs of a test (e.g. CT scan)
+    # gamma distribution used because costs are non-negative and right-skewed.
     c_scan = 0,   
     
     # assumed costs of running AI-based health technology per case
@@ -169,12 +172,16 @@ f_gen_psa <- function(
   
   ) # close data frame  
     
-  ## When selecting our new economic model approach with human-AI collaboration
+  ## when selecting our new economic model approach with human-AI collaboration,
+  # additional parameters will be added which will govern:
+  # (dis/con)concordance between human and AI decisions and 
+  # the clinician's reliance on AI advice in case of discordance.
   if (human_ai_collab == TRUE) { 
     
     # assumed correlation between positive cases that are challenging for the human vs the AI-based health technology 
     # rho_pos determines dis/concordance, see Box 1 in manuscript
     # in case of complementary team performance, rho_pos is negative and ensures that concordance (for tp and fn) is lower and discordance is higher
+    # truncated normal distribution used because correlation is bounded between -1 and 1.
     df_psa$rho_pos = if (psa) {
       rtruncnorm(
         n = n_sim, 
@@ -202,7 +209,8 @@ f_gen_psa <- function(
     # determines reliance, see Box 2 in manuscript 
     # in case of over-reliance, alpha is positive and ensures that the probability of reliance is higher in all cases (tp, tn, fp, fn)
     # in case of under-reliance, alpha is negative and ensures that the probability of reliance is lower in all cases (tp, tn, fp, fn)  
-    df_psa$alpha = if (psa) {
+    # normal distribution used because probability is theoretically unbounded.
+     df_psa$alpha = if (psa) {
       rnorm(
         n = n_sim,
         mean = 0.00,
@@ -222,7 +230,7 @@ f_gen_psa <- function(
       )
     } else {0.00}
     
-    # assumed consequences for wrong diagnosis
+    # assumed consequences for wrong decision
     # determines reliance, see Box 2 in manuscript
     # in case the consequences of fn are worse than fp, beta3 is positive and ensures that reliance is higher in cases where the AI gave a positive advice (fp and tp) compared to negative advice (fn and tn)
     # in case the consequences of fp are worse than fn, beta3 is negative and ensures that reliance is higher in cases where the AI gave a negative advice (fn and tn) compared to positive advice (fp and tp)
