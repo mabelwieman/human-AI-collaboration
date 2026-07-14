@@ -25,10 +25,7 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
 - **R packages**:
   - dampack
   - docstring
-  - DiagrammeR
   - BCEA
-  - matrixStats
-  - summarytools
   - testthat
   - mc2d
   - truncnorm
@@ -47,7 +44,7 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
 
     In R, run:
     ```r
-    required_packages <- c("docstring", "DiagrammeR", "dampack", "BCEA", "matrixStats", "summarytools", "matrixStats", "mc2d", "truncnorm",
+    required_packages <- c("docstring", "dampack", "BCEA","testthat", "mc2d", "truncnorm",
               "ggplot2", "ggrepel", "tidyverse", "gridExtra")
     install.packages(required_packages)
     ```
@@ -56,6 +53,9 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
 
 ## Usage
 
+1.  **Selecting AI as stand-alone intervention or human-AI collaboration**
+    Set the human_ai_collab flags in the scripts `f_gen_psa.R`, `f_economic_model.R` and `f_wrapper.R` to FALSE or TRUE, respectively.
+    
 1.  **Main results:**
     Run the script `Analyses.R` to generate the results of our simulation study.
 
@@ -72,31 +72,8 @@ The input parameters are example inputs and several assumptions were made.
 The input parameters generated through the f_gen_psa() function with deterministic values can be copied to the clipboard by: 
 
 ```r
-write.table(f_gen_psa(n_sim = 1), "clipboard", sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(inputs_overview, "clipboard", sep = "\t", row.names = FALSE, col.names = FALSE)
 ```
-Parameter name	Value (SE)	Distribution 
-p_prev 	0.50 (0.10)	Beta
-p_human_sens	0.70 (0.14)	Beta 
-p_human_spec	0.70 (0.14)	Beta 
-p_AI_sens 	0.80 (0.16)	Beta
-p_AI_spec 
-	0.80 (0.16)	Beta
-rho 	-0.30 	Fixed
-ρpos	0.50 (0.10)	Truncated normal
-ρneg	0.50 (0.10)	Truncated normal
-α	0.00 (0.20)	Normal 
-β1	0.00 (0.00)	Normal
-β2	0.00 (0.00)	Normal
-c_scan = c_tn	0.00 (0)	Gamma
-c_AI	200 (40)	Gamma
-c_tp	5,000 (1,000)	Gamma 
-c_fn	10,000 (2,000)	Gamma 
-c_fp	1,000 (200)	Gamma
-u_tp	0.80 (0.16)	Beta
-u_tn	0.95 (0.19)	Beta
-u_fn	0.40 (0.08)	Beta
-u_fp	0.65 (0.13)	Beta 
-
 
 ## Model analyses
 
@@ -104,7 +81,7 @@ Uncertainty is examined via Monte Carlo simulations (10,000 iterations), along w
 
 ## Model validation
 
-The technical implementation of the model has been reviewed by a second health economist and an econometrist. Stress tests (black box testing) as well as sensitivity and scenario analyses were performed to ensure the model functions logically and produces expected outcomes.
+The technical implementation of the model has been checked with the help of the testthat package in `Model validation.R` to ensure that the model functions logically and produces expected outcomes.
 
 ## Contact
 
