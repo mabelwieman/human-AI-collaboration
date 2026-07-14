@@ -37,7 +37,7 @@ source("f_sens_spec_corr.R") # load helper function to generate correlated sensi
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
     seed = 12345, # set random seed for reproducibility
-    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
 ){
   set.seed(seed)
   
@@ -71,7 +71,6 @@ f_gen_psa <- function(
   # open PSA input parameter dataframe where each row corresponds to a unique set of samples PSA parameters
   df_psa <- data.frame( 
     
-    ## decision tree probabilities vectors with length n_sim 
     # assumed probability that an individual in the hypothetical patient population has the disease
     # beta distribution used because probability is bounded between 0 and 1.
     p_prev = if(psa == TRUE) { 
@@ -172,7 +171,7 @@ f_gen_psa <- function(
   
   ) # close data frame  
     
-  ## when selecting our new economic model approach with human-AI collaboration,
+  # when selecting our new economic model approach with human-AI collaboration,
   # additional parameters will be added which will govern:
   # (dis/con)concordance between human and AI decisions and 
   # the clinician's reliance on AI advice in case of discordance.

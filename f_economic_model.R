@@ -13,17 +13,18 @@
 #'   specificity estimates. If `FALSE`, strategy 2 represents AI as stand-alone intervention.
 #'
 #' @details
-#' The model is implemented as a simple decision tree.
+#' The economic model is implemented as a simple decision tree.
 #'
 #' For each strategy:
 #' \itemize{
 #'   \item Disease prevalence determines the proportion of patients with
 #'         and without disease.
-#'   \item Sensitivity and specificity determine the probabilities of
+#'   \item Sensitivity determines the probabilities of
 #'         true positives (TP), false negatives (FN),
+#'   \item Specificity  determines the probabilities of
 #'         true negatives (TN), and false positives (FP).
 #'   \item Expected costs and QALYs are calculated by weighting outcome-
-#'         specific costs and utilities by their probabilities.
+#'         specific costs and utilities (determined in f_gen_psa) by their probabilities.
 #' }
 #'
 #' Incremental cost-effectiveness is calculated as:
@@ -36,24 +37,38 @@
 #'   \item Incremental cost-effectiveness ratio (iCER).
 #' }
 #' 
+#' @examples
+#' # modeling AI as stand-alone intervention
+#' f_economic_model(
+#'   params = params,
+#'   v_treatments = c("Standard of care", "AI stand-alone"),
+#'   human_ai_collab = FALSE
+#' )
+#' 
+#'# modeling human-AI collaboration
+#' f_economic_model(
+#'   params = params,
+#'   v_treatments = c("Standard of care", "AI stand-alone"),
+#'   human_ai_collab = TRUE
+#' )
 #' @export
 
-f_MM_prediction <- function(
+f_economic_model <- function(
     params, # input parameters
     v_treatments, # the treatment options: standard of care vs AI alone or Human-AI collaboration, depends on selection
-    human_ai_collab = FALSE  # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
 ){
   with(as.list(params), {
     
-    ## input
+    # input
     n_treatments <- length(v_treatments)
     
-    ## strategy 1: human-only
+    # strategy 1: human-only
     sens_t1 <- p_human_sens
     spec_t1 <- p_human_spec
     cost_test_t1 <- c_scan
     
-    ## strategy 2: AI-only or human-AI collaboration
+    # strategy 2: AI-only or human-AI collaboration
     sens_t2 <- if (human_ai_collab) p_collab_sens else p_ai_sens
     spec_t2 <- if (human_ai_collab) p_collab_spec else p_ai_spec
     cost_test_t2 <- c_scan + c_ai
@@ -65,7 +80,7 @@ f_MM_prediction <- function(
     # FP = disease absent but incorrectly identified as disease
     v_states <- c("TP", "FN", "TN", "FP")
     
-    ## decision tree
+    # decision tree
     # rows correspond to prediction strategies.
     # columns contain branch probabilities and terminal node probabilities
     # for true positives (TP), false negatives (FN),
@@ -84,7 +99,7 @@ f_MM_prediction <- function(
       )
     )
     
-    ## strategy 1
+    # strategy 1
     # joint probabilities are calculated by combining disease prevalence
     # with prediction performance (sensitivity and specificity).
     m_dt[1, "p disease"]    <- p_prev
@@ -96,7 +111,7 @@ f_MM_prediction <- function(
     m_dt[1, "p positive"] <- m_dt[1, "TP"] + m_dt[1, "FP"]
     m_dt[1, "p negative"] <- m_dt[1, "FN"] + m_dt[1, "TN"]
     
-    ## strategy 2
+    # strategy 2
     m_dt[2, "p disease"]    <- p_prev
     m_dt[2, "p no disease"] <- 1 - p_prev
     m_dt[2, "TP"] <- p_prev * sens_t2
@@ -106,7 +121,7 @@ f_MM_prediction <- function(
     m_dt[2, "p positive"] <- m_dt[2, "TP"] + m_dt[2, "FP"]
     m_dt[2, "p negative"] <- m_dt[2, "FN"] + m_dt[2, "TN"]
     
-    ## costs and QALYs
+    # costs and QALYs
     # outcome-specific costs and utilities are weighted by the probability
     # of each prediction outcome (TP, FN, TN, FP).
     qaly_t1 <- m_dt[1, "TP"] * u_tp +
@@ -130,12 +145,12 @@ f_MM_prediction <- function(
       m_dt[2, "FN"] * c_fn +
       m_dt[2, "FP"] * c_fp
     
-    ## incremental cost-effectiveness ratio
+    # incremental cost-effectiveness ratio
     # positive values indicate the additional cost per additional QALY
     # gained by strategy 2 (new) relative to strategy 1 (standard of care).
     iCER <- (cost_t2 - cost_t1) / (qaly_t2 - qaly_t1)
     
-    ## output
+    # output
     return(
       setNames(
         c(cost_t1,

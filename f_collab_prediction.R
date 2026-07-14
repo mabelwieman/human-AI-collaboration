@@ -13,9 +13,9 @@
 #' @details
 #' The function processes each parameter set independently. Concordance is
 #' modelled using a Gaussian copula to preserve the marginal sensitivities,
-#' specificities and specified case difficulty correlation between the human and AI.
+#' specificities, and specified case difficulty correlation between the human and AI.
 #' Reliance probabilities are modelled using an inverse-logit function
-#' parameterised by baseline trust `alpha`, level of appropriateness `beta1` and consequences of wrong decision `beta2`
+#' parameterised by baseline trust `alpha`, level of appropriateness `beta1` and consequences of wrong decision `beta2`.
 #' 
 #' @return The input data frame with additional columns containing:
 #' \describe{
@@ -29,8 +29,24 @@
 #'   \item{Collaborative performance}{`p_collab_sens` and
 #'     `p_collab_spec`}
 #' }
+#' 
+#' ' @examples
+#' # Generate 100 PSA parameter sets
+#' df_psa <- f_gen_psa(
+#'   n_sim = 100,
+#'   seed = 12345,
+#'   human_ai_collab = TRUE
+#' )
+#'
+#' # Calculate collaborative prediction performance
+#' df_psa <- f_collab_prediction(df_psa)
+#'
+#' # View the first few collaborative performance estimates
+#' head(df_psa[c("p_collab_sens", "p_collab_spec")])
+#' 
+#' @export
 
-f_collab_accuracy <- function(df_psa) {
+f_collab_prediction <- function(df_psa) {
   
   inv_logit <- function(x) {1 / (1 + exp(-x))} # helper function for inverse logit
   
@@ -107,5 +123,5 @@ f_collab_accuracy <- function(df_psa) {
     df_psa$p_dis_human_tn_ai_fp * (1 - df_psa$p_human_rely_ai_fp) +
     df_psa$p_dis_human_fp_ai_tn * df_psa$p_human_rely_ai_tn
   
-  return(df_psa) # return the original input dataframe augmented with the calculated concordance, discordance, reliance and collaborative performance measures
+  return(df_psa) # return the original input dataframe augmented with the calculated concordance, discordance, reliance and collaborative performance probabilities
 } # end of function

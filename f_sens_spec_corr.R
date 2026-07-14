@@ -14,6 +14,14 @@
 #' @param n Integer. Number of samples to generate.
 #' @param is_psa Logical. Whether to generate PSA samples (FALSE returns means).
 #' @param seed Integer (optional). Random seed for reproducibility.
+#'
+#' @details A data frame with one row per generated parameter set and two
+#' columns:
+#' 
+#' \itemize{
+#'   \item{sensitivity}{Sampled sensitivity values.}
+#'   \item{specificity}{Sampled specificity values.}
+#' }
 #' 
 #' @return A data.frame with columns `sensitivity` and `specificity`.
 #' 
@@ -21,6 +29,8 @@
 #' generate_sp_se_cor(mean_sens = 0.85, mean_spec = 0.90,
 #'                    sd_sens = 0.05, sd_spec = 0.04,
 #'                    rho = -0.3, n = 1000, is_psa = TRUE)
+#'                    
+#'@export
 
 generate_sp_se_cor <- function(mean_sens, mean_spec, 
                                sd_sens, sd_spec, 

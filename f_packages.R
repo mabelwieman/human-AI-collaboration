@@ -1,4 +1,4 @@
-#' Description: Function to install and/or update packages 
+#' Description: Helper function to install and/or update packages 
 #'
 #' This function checks whether a set of required packages is
 #' available in the local R environment. Missing packages can be installed

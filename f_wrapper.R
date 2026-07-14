@@ -19,13 +19,11 @@
 #' @param human_ai_collab Logical. If `TRUE`, the model includes human–AI
 #'   collaboration parameters. If collaboration accuracy parameters are not
 #'   already present in `df_psa`, they are generated automatically using
-#'   `f_collab_accuracy()`.
+#'   `f_collab_prediction()`.
 #'
 #' @details
 #' The function:
 #' \itemize{
-#'   \item Optionally generates collaboration prediction performance parameters
-#'         (`p_collab_sens` and `p_collab_spec`).
 #'   \item Runs the specified model 'f_model()' once for each row of PSA inputs.
 #'   \item Stores costs, QALYs, and ICER results for each simulation.
 #'   \item Returns either:
@@ -61,6 +59,39 @@
 #'   \item \code{iCER}: Incremental cost-effectiveness ratio.
 #'   \item \code{iNMB}: Incremental net monetary benefit.
 #' }
+#' 
+#' ' @examples
+#' # Generate PSA inputs
+#' df_psa <- f_gen_psa(
+#'   n_sim = 100,
+#'   seed = 12345,
+#'   human_ai_collab = TRUE
+#' )
+#'
+#' # Run the economic model for all PSA simulations
+#' df_out <- f_wrapper(
+#'   df_psa = df_psa,
+#'   v_treatments = c("Standard of care", "Human-AI collaboration"),
+#'   f_model = f_economic_model,
+#'   human_ai_collab = TRUE
+#' )
+#'
+#' head(df_out)
+#'
+#' # Deterministic analysis (formatted for OWSA)
+#' df_det <- f_gen_psa(
+#'   n_sim = 1,
+#'   seed = 12345,
+#'   human_ai_collab = TRUE
+#' )
+#'
+#' df_out_det <- f_wrapper(
+#'   df_psa = df_det,
+#'   v_treatments = c("Standard of care", "Human-AI collaboration"),
+#'   owsa = TRUE,
+#'   f_model = f_economic_model,
+#'   human_ai_collab = TRUE
+#' )
 #'
 #' @export
 
@@ -70,14 +101,14 @@ f_wrapper <- function(
     owsa = FALSE, # required for owsa output dataframe format
     owsa_wtp = 35000, # required for owsa output
     f_model, # specify model function
-    human_ai_collab = FALSE # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE # FALSE when you want to model AI as stand-alone intervention
 ){
   
-  # generate collaboration prediction performance parameters if required
+  # generate collaboration prediction performance parameters if required for obj_owsa_dam
   if (human_ai_collab &&
       !all(c("p_collab_sens", "p_collab_spec") %in% names(df_psa))) {
     
-    df_psa <- f_collab_accuracy(df_psa)
+    df_psa <- f_collab_prediction(df_psa)
     
   }
   
