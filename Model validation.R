@@ -50,7 +50,7 @@ testthat::expect_equal(
   rep(0, nrow(df_psa)) 
 )   
 
-# check to see if the joint prediction intermediate outcomes are bounded between 0 and 1
+# check to see if the human-AI joint prediction intermediate outcomes are bounded between 0 and 1
 testthat::expect_true(all(df_psa$p_collab_sens >= 0 & df_psa$p_collab_sens <= 1),
               info = "Sensitivity bounds violated in large PSA")
 
@@ -63,7 +63,7 @@ testthat::expect_true(all(df_psa$p_human_rely_ai_tn >= 0 & df_psa$p_human_rely_a
 testthat::expect_true(all(df_psa$p_human_rely_ai_fp >= 0 & df_psa$p_human_rely_ai_fp <= 1))
 testthat::expect_true(all(df_psa$p_human_rely_ai_fn >= 0 & df_psa$p_human_rely_ai_fn <= 1))
 
-# check to see if the (dis/con)cordance probabilities in the decision tree sum up to 1
+# check to see if the concordance and discordance intermediate outcomes in the decision tree sum up to 1
 testthat::expect_equal(
   df_psa$p_con_tp + df_psa$p_con_fn + df_psa$p_dis_human_tp_ai_fn + df_psa$p_dis_human_fn_ai_tp,
   rep(1, nrow(df_psa)), 
@@ -78,9 +78,46 @@ testthat::expect_equal(
 
 # checking whether probabilistic inputs and deterministic inputs are similar
 df_det - colMeans(df_psa) 
-# checking whether probabilistic inputs and deterministic inputs are similar
+
 (df_det - colMeans(df_psa)) / df_det 
-# checking whether probabilistic inputs and deterministic inputs are similar
+
 abs((df_det - colMeans(df_psa)) / df_det) * 100 
 
+# checking whether expected QALYs for all strategies are 1.0, when setting all utilities to 1
+testthat::test_that("TECH-VER: Setting all utilities to 1 yields total QALY of 1.0", {
+  psa_u1 <- df_psa
+  psa_u1$u_tp <- 1; psa_u1$u_tn <- 1; psa_u1$u_fp <- 1; psa_u1$u_fn <- 1
+  
+  res <- f_wrapper(psa_u1, v_treatments, f_model = f_economic_model)
+  
+  # Column 3 = QALY Strategy 1, Column 4 = QALY Strategy 2
+  expect_equal(res[, 3], rep(1, nrow(res)))
+  expect_equal(res[, 4], rep(1, nrow(res)))
+})
+
+# checking whether expected costs for all strategies are 0, when setting all costs to 0
+testthat::test_that("TECH-VER: Setting all costs to 0 yields total cost of 0", {
+  psa_c0 <- df_psa
+  psa_c0$c_scan <- 0; psa_c0$c_ai <- 0; psa_c0$c_tp <- 0
+  psa_c0$c_tn   <- 0; psa_c0$c_fp <- 0; psa_c0$c_fn <- 0
+  
+  res <- f_wrapper(psa_c0, v_treatments, f_model = f_economic_model)
+  
+  # Column 1 = Cost Strategy 1, Column 2 = Cost Strategy 2
+  expect_equal(res[, 1], rep(0, nrow(res)))
+  expect_equal(res[, 2], rep(0, nrow(res)))
+})
+
+# checking whether incremental outcomes are 0, when setting performance, costs, and utilities equal between SoC and AI
+testthat::test_that("TECH-VER: Identical strategies yield 0 incremental costs and QALYs", {
+  psa_equal <- df_psa
+  psa_equal$p_ai_sens <- psa_equal$p_human_sens
+  psa_equal$p_ai_spec <- psa_equal$p_human_spec
+  psa_equal$c_ai <- 0
+  
+  res <- f_wrapper(psa_equal, v_treatments, f_model = f_economic_model, human_ai_collab = FALSE)
+  
+  expect_equal(res[, 2] - res[, 1], rep(0, nrow(res)))
+  expect_equal(res[, 4] - res[, 3], rep(0, nrow(res)))
+})
 # end of script

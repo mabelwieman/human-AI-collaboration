@@ -2,6 +2,16 @@
 This repository contains the source code and supporting scripts for the manuscript on
 Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based Prediction Models: A Modelling Framework and Simulation Study
 
+There are eight scripts in total:
+-	"f_gen_psa.R" function to generate probabilistic (sensitivity) analysis input parameters
+-	"f_collab_prediction.R" helper function to calculate (con/dis)cordance and reliance for human-AI joint prediction performance
+-	"f_economic_model.R" function to calculate results with a decision tree economic model
+-	"f_wrapper.R" function to combine the functions of f_gen_psa and f_economic_model 
+- "f_sens_spec_corr.R" helper function to correlate sensitivity and specificity
+-	"f_packages.R" helper function to install and update R packages
+-	"Analyses.R" to show the results of various (cost-)effectiveness analyses within the simulation study 
+-	"Model validation.R" to check the technical implementation of the model
+
 ---
 
 ## Table of Contents
@@ -33,6 +43,8 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
   - ggrepel
   - tidyverse
   - gridExtra
+  - dplyr
+  - tibble
 
 ### Steps
 
@@ -41,11 +53,10 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
     git clone https://github.com/mabelwieman/human-AI-collaboration.git
     ```
 2.  **Install Required R Packages:**
-
     In R, run:
     ```r
     required_packages <- c("docstring", "dampack", "BCEA","testthat", "mc2d", "truncnorm",
-              "ggplot2", "ggrepel", "tidyverse", "gridExtra")
+              "ggplot2", "ggrepel", "tidyverse", "gridExtra", "dplyr", "tibble")
     install.packages(required_packages)
     ```
 3.  **Set the Working Directory:**
@@ -53,8 +64,8 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
 
 ## Usage
 
-1.  **Selecting AI as stand-alone intervention or human-AI collaboration**
-    Set the human_ai_collab flags in the scripts `f_gen_psa.R`, `f_economic_model.R` and `f_wrapper.R` to FALSE or TRUE, respectively.
+1.  **Selecting the strategy: human-AI collaboration explicitly or implicitly modelled**
+    Set the human_ai_collab flags in the scripts `f_gen_psa.R`, `f_economic_model.R` and `f_wrapper.R` to FALSE (implicitly modelled) or TRUE (explicitly modelled).
     
 1.  **Main results:**
     Run the script `Analyses.R` to generate the results of our simulation study.
@@ -64,7 +75,7 @@ Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based 
 
 ## Model conceptualization
 
-We performed a simulation study to illustrate our proposed health economic modeling framework for human-AI collaboration. A hypothetical cohort of patients were diagnosed either via an AI-based prediction model stand-alone intervention (i.e. ignoring human-AI collaboration), human-AI collaboration (i.e. an AI-based prediction model with human oversight, including discordance and reliance parameters), or humans alone (SoC). The three care pathways were compared in terms of performance outcomes and (cost-)effectiveness.
+We performed a simulation study to illustrate our proposed health economic modeling framework explicitly considering human-AI collaboration within model-based health economic evaluations to support informed decision-making for further research and implementation of AI-based prediction models when only AI stand-alone evidence is available. A hypothetical cohort of patients were diagnosed either via implicit modelling of human-AI collaboration (.e. assuming AI stand-alone performance evidence reflects human-AI joint performance), explicit modelling of human-AI collaboration (i.e. including concordance, discordance, and reliance parameters), or SoC (i.e. human assessment). The three strategies were compared in terms of performance outcomes and (cost-)effectiveness.
 
 ## Model inputs
 
@@ -77,7 +88,7 @@ write.table(inputs_overview, "clipboard", sep = "\t", row.names = FALSE, col.nam
 
 ## Model analyses
 
-Uncertainty is examined via Monte Carlo simulations (10,000 iterations), along with deterministic sensitivity analyses, various scenario analyses, value-of-information analysis and factor analyses. Outputs include among others cost-effectiveness planes, cost-effectiveness acceptability curves, optimal strategy plots, tornado diagrams, info-rank plots, and expected loss curves.
+Uncertainty is examined via Monte Carlo simulations (10,000 iterations), along with various scenario analyses. Outputs include among others cost-effectiveness planes and cost-effectiveness acceptability curves.
 
 ## Model validation
 

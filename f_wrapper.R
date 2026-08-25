@@ -1,7 +1,8 @@
 #' Description: Wrapper function 
 #' 
 #' This function serves as a wrapper around the specified economic model
-#' function (`f_model`). It executes the model for each row of PSA inputs
+#' function (`f_economic_model`) and Probabilistic Sensitivity Analysis inputs function (`f_gen_psa`). 
+#' It executes the model for each row of PSA inputs
 #' and structures the outputs for probabilistic sensitivity analysis (PSA)
 #' or deterministic one-way sensitivity analysis (OWSA).
 #'
@@ -17,7 +18,8 @@
 #'   The function must return costs, QALYs, and incremental cost-effectiveness
 #'   outcomes (ICER) for all treatment strategies.
 #' @param human_ai_collab Logical. If `TRUE`, the model includes human–AI
-#'   collaboration parameters. If collaboration accuracy parameters are not
+#'   collaboration parameters (concordance, discordance, and reliance). 
+#'   If collaboration accuracy parameters are not
 #'   already present in `df_psa`, they are generated automatically using
 #'   `f_collab_prediction()`.
 #'
@@ -71,7 +73,7 @@
 #' # Run the economic model for all PSA simulations
 #' df_out <- f_wrapper(
 #'   df_psa = df_psa,
-#'   v_treatments = c("Standard of care", "Human-AI collaboration"),
+#'   v_treatments = c("Standard of care", "Human-AI collaboration explicitly modelled"),
 #'   f_model = f_economic_model,
 #'   human_ai_collab = TRUE
 #' )
@@ -101,15 +103,12 @@ f_wrapper <- function(
     owsa = FALSE, # required for owsa output dataframe format
     owsa_wtp = 35000, # required for owsa output
     f_model, # specify model function
-    human_ai_collab = TRUE # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE # FALSE when you want to model human-AI collaboration implicitly
 ){
   
-  # generate collaboration prediction performance parameters if required for obj_owsa_dam
-  if (human_ai_collab &&
-      !all(c("p_collab_sens", "p_collab_spec") %in% names(df_psa))) {
-    
+  # always force recalculation of collaborative parameters during OWSA / TWSA
+  if (human_ai_collab) {
     df_psa <- f_collab_prediction(df_psa)
-    
   }
   
   n_sim <- dim(df_psa)[1] # number of simulations (as indicated in f_gen_psa()) deterministic (n_sim = 1) in case of owsa

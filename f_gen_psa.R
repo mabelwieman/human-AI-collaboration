@@ -2,9 +2,9 @@
 #'
 #' This function generates a structured data frame containing model input parameters for
 #' the probabilistic sensitivity analysis (PSA) of the economic decision tree model. 
-#' It incorporates various distributions (beta, gamma, truncated normal, and normal) to account for uncertainty in
+#' It incorporates various distributions (e.g., beta, gamma) to account for uncertainty in
 #' model parameters related to prediction performance, utilities, costs, and optionally discordance and reliance 
-#' when modeling human-AI collaboration instead of AI as stand-alone intervention.
+#' when modeling human-AI collaboration explicitly.
 #'
 #' @param n_sim Integer. Number of PSA simulations. Use `1` for deterministic analysis.
 #' @param seed Integer. Random seed for reproducibility.
@@ -18,7 +18,7 @@
 #'   \item Generates correlated sensitivity and specificity samples for human and AI stand-alone performances.
 #'   \item Supports deterministic analysis when `n_sim = 1`.
 #'   \item Samples disease prevalence, prediction performance, utilities, and costs from appropriate probability distributions.
-#'   \item Optionally includes discordance and reliance parameters for human–AI collaboration.
+#'   \item Optionally includes discordance and reliance parameters for modeling human–AI collaboration explicitly.
 #' }
 #'
 #' @return Data frame ('df_psa') where each row corresponds to a unique set of sampled PSA parameters.
@@ -37,7 +37,7 @@ source("f_sens_spec_corr.R") # load helper function to generate correlated sensi
 f_gen_psa <- function(
     n_sim = 10000,  # number of simulations (set to 1 for deterministic parameters)
     seed = 12345, # set random seed for reproducibility
-    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
+    human_ai_collab = TRUE  # FALSE when you want to model human-AI collaboration implicitly
 ){
   set.seed(seed)
   
@@ -171,75 +171,78 @@ f_gen_psa <- function(
   
   ) # close data frame  
     
-  # when selecting our new economic model approach with human-AI collaboration,
+  # when selecting our new economic model approach with modeling human-AI collaboration explicitly,
   # additional parameters will be added which will govern:
   # (dis/con)concordance between human and AI decisions and 
-  # the clinician's reliance on AI advice in case of discordance.
+  # the human's reliance on AI advice in case of discordance.
   if (human_ai_collab == TRUE) { 
     
-    # assumed correlation between positive cases that are challenging for the human vs the AI-based health technology 
-    # rho_pos determines dis/concordance, see Box 1 in manuscript
-    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for tp and fn) is lower and discordance is higher
-    # truncated normal distribution used because correlation is bounded between -1 and 1.
+    # assumed correlation between positive cases (ground truth is disease present) that are challenging for the human vs the AI-based health technology 
+    # rho_pos determines dis/concordance, see Table 1 and Appendix I in manuscript
+    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for TP and FN) is lower and discordance is higher
+    # betaPERT because correlation probably needs to be elicited from experts, and it is bounded between -1 and 1.
     df_psa$rho_pos = if (psa) {
-      rtruncnorm(
+      rpert(
         n = n_sim, 
-        a = -1,
-        b = 1,
-        mean = 0.50,
-        sd = 0.20
+        min = -0.6,
+        max = 0.6,
+        mode = 0.00
       )
-    } else {0.50}
+    } else {0.00}
     
-    # assumed correlation between negative cases that are challenging for the human vs the AI-based health technology
-    # rho_neg determines dis/concordance, see Box 1 in manuscript 
-    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for tn and fp) is lower and discordance is higher
+    # assumed correlation between negative cases (ground truth is disease absent) that are challenging for the human vs the AI-based health technology
+    # rho_neg determines dis/concordance, see Table 1 and Appendix I in manuscript 
+    # in case of complementary team performance, rho_pos is negative and ensures that concordance (for TN and FP) is lower and discordance is higher
     df_psa$rho_neg = if (psa) {
-      rtruncnorm(
+      rpert(
         n = n_sim, 
-        a = -1,
-        b = 1,
-        mean = 0.50,
-        sd = 0.20
+        min = -0.6,
+        max = 0.6,
+        mode = 0.00
       )
-    } else {0.50}
+    } else {0.00}
     
     # assumed baseline trust
-    # determines reliance, see Box 2 in manuscript 
-    # in case of over-reliance, alpha is positive and ensures that the probability of reliance is higher in all cases (tp, tn, fp, fn)
-    # in case of under-reliance, alpha is negative and ensures that the probability of reliance is lower in all cases (tp, tn, fp, fn)  
-    # normal distribution used because probability is theoretically unbounded.
+    # determines reliance, see Table 1 and Appendix I in manuscript 
+    # in case of over-reliance, alpha is positive and ensures that the probability of reliance is higher in all cases (TP, FP, TN, FN)
+    # in case of under-reliance, alpha is negative and ensures that the probability of reliance is lower in all cases (TP, FP, TN, FN)  
+    # betaPERT because correlation probably needs to be elicited from experts, and it is bounded between -3 and 3.
      df_psa$alpha = if (psa) {
-      rnorm(
-        n = n_sim,
-        mean = 0.00,
-        sd = 0.20
-      )
-    } else {0.00}
+       rpert(
+         n = n_sim, 
+         min = -0.6,
+         max = 0.6,
+         mode = 0.00
+       )
+     } else {0.00}
     
     # assumed appropriateness of reliance 
-    # determines reliance, see Box 2 in manuscript
-    # in case of appropriate reliance, beta1 is positive and ensures that reliance is higher in cases where the AI gave a correct advice (tp and tn) and lower where the AI gave an incorrect advice (fp and fn) 
-    # in case of inappropriate reliance, beta1 is negative and ensures that reliance is higher in cases where the AI gave an incorrect advice (fp and fn) and lower where the AI gave a correct advice (tp and tn)
-    df_psa$beta1 = if (psa) {
-      rnorm(
-        n = n_sim,
-        mean = 0.00,
-        sd = 0.00
-      )
-    } else {0.00}
+    # determines reliance, see Table 1 and Appendix I in manuscript
+    # in case of appropriate reliance, beta1 is positive and ensures that reliance is higher in cases where the AI gave a correct advice (TP and TN) and lower where the AI gave an incorrect advice (FP and FN) 
+    # in case of inappropriate reliance, beta1 is negative and ensures that reliance is higher in cases where the AI gave an incorrect advice (FP and FN) and lower where the AI gave a correct advice (TP and TN)
+    df_psa$beta1 = 0 # not in the base-case example of the simulation study
+#   df_psa$beta1 = if (psa) {
+#     rpert(
+#       n = n_sim, 
+#       min = -3,
+#       max = 3,
+#       mode = 0.00
+#     )
+#   } else {0.00}
     
     # assumed consequences for wrong decision
-    # determines reliance, see Box 2 in manuscript
-    # in case the consequences of fn are worse than fp, beta3 is positive and ensures that reliance is higher in cases where the AI gave a positive advice (fp and tp) compared to negative advice (fn and tn)
-    # in case the consequences of fp are worse than fn, beta3 is negative and ensures that reliance is higher in cases where the AI gave a negative advice (fn and tn) compared to positive advice (fp and tp)
-    df_psa$beta2 = if (psa) {
-      rnorm(
-        n = n_sim,
-        mean = 0.00,
-        sd = 0.00
-      )
-    } else {0.00}
+    # determines reliance, see Table 1 and Appendix I in manuscript
+    # in case the consequences of Fn are worse than FP, beta3 is positive and ensures that reliance is higher in cases where the AI gave a positive advice (FO and TP) compared to negative advice (FN and TN)
+    # in case the consequences of FP are worse than FN, beta3 is negative and ensures that reliance is higher in cases where the AI gave a negative advice (FN and TN) compared to positive advice (FP and TP)
+    df_psa$beta2 = 0 # not in the base-case example of the simulation study
+#   df_psa$beta2 = if (psa) {
+#     rpert(
+#       n = n_sim, 
+#       min = -3,
+#       max = 3,
+#       mode = 0.00
+#     )
+#   } else {0.00}
     
   } # close if human_ai_collab
   

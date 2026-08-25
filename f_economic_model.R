@@ -2,15 +2,15 @@
 #'
 #' This function evaluates the expected costs and quality-adjusted life years (QALYs) 
 #' associated with two treatment strategies:
-#' human-only assessment (standard of care) and either AI as stand-alone intervention or
-#' human–AI collaboration.
+#' human-only assessment (standard of care) and either modeling human-AI collaboration implicitly or
+#' model human-AI collaboration explicitly.
 #'
 #' @param params Named vector or data frame row containing model parameters.
 #' @param v_treatments Character vector containing the names of the
 #'   strategies being compared.
 #' @param human_ai_collab Logical. If `TRUE`, strategy 2 represents
-#'   human–AI collaboration using collaborative sensitivity and
-#'   specificity estimates. If `FALSE`, strategy 2 represents AI as stand-alone intervention.
+#'   model human–AI collaboration explicit.ly 
+#'   If `FALSE`, strategy 2 represents model human-AI collaboration implicitly
 #'
 #' @details
 #' The economic model is implemented as a simple decision tree.
@@ -38,25 +38,25 @@
 #' }
 #' 
 #' @examples
-#' # modeling AI as stand-alone intervention
+#' # modeling human-AI collaboration implicitly
 #' f_economic_model(
 #'   params = params,
-#'   v_treatments = c("Standard of care", "AI stand-alone"),
+#'   v_treatments = c("Standard of care", "human-AI collaboration implicit"),
 #'   human_ai_collab = FALSE
 #' )
 #' 
-#'# modeling human-AI collaboration
+#'# modeling human-AI collaboration explicitly
 #' f_economic_model(
 #'   params = params,
-#'   v_treatments = c("Standard of care", "AI stand-alone"),
+#'   v_treatments = c("Standard of care", "human-AI collaboration explicit"),
 #'   human_ai_collab = TRUE
 #' )
 #' @export
 
 f_economic_model <- function(
     params, # input parameters
-    v_treatments, # the treatment options: standard of care vs AI alone or Human-AI collaboration, depends on selection
-    human_ai_collab = TRUE  # FALSE when you want to model AI as stand-alone intervention
+    v_treatments, # the treatment options: standard of care vs modeling human-AI collaboration implicitly or explicitly, depends on selection
+    human_ai_collab = TRUE  # FALSE when you want to model human-AI collaboration implicitly
 ){
   with(as.list(params), {
     
