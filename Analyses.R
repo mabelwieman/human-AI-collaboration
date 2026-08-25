@@ -7,15 +7,14 @@
 #'   2. Runs deterministic and probabilistic cost-effectiveness analyses.
 #'   3. Runs value-of-information analyses.
 #'   4. Runs scenario analyses.
-#'   5. Runs factorial analyses.
 
 # setup
 options(scipen = 999)
 
 # load packages (and install/update if required)
 packages <- c("dampack", "BCEA", "testthat", 
-               "mc2d", "truncnorm",
-              "ggplot2", "ggrepel", "tidyverse", "gridExtra") 
+               "mc2d", "truncnorm", "tibble",
+              "ggplot2", "ggrepel", "tidyverse", "gridExtra", "dplyr") 
 source("f_packages.R") # function to install/update packages 
 f_packages(packages = packages)
 suppressPackageStartupMessages(lapply(packages, require, character.only = TRUE))  # load packages
@@ -114,7 +113,7 @@ obj_bcea <- bcea( # create bcea object
 # View results
 obj_icers
 
-# cost effectiveness frontier
+# optional cost effectiveness frontier
 #plot(
 #  x = obj_icers, # icers object
 #  currency = n_currency, # costs units
@@ -122,7 +121,7 @@ obj_icers
 #  label = "all" # add label to all strategies
 #) # plot end
 
-# Incremental cost effectiveness plane
+# optional incremental cost effectiveness plane
 contour2(
   he = obj_bcea, # bcea object
   wtp = n_wtp, # selects the wtp
@@ -140,14 +139,14 @@ contour2(
 #  graph = "base" # use base graphics (instead of ggplot)
 #) # eib.plot end
 
-#ib.plot(
+# optional ib.plot(
 #  he = obj_bcea, # bcea object
 #  comparison = 1, # if more than 2 interventions, selects the pairwise comparison
 #  wtp = n_wtp, #  selects the wtp
 #  graph = "base" # uses base graphics (instead of ggplot)
 #) # ib.plot end
 
-# Cost effectiveness acceptability curve
+# cost effectiveness acceptability curve
 plot(
   ceac(
     psa = obj_psa_dam, 
@@ -156,7 +155,8 @@ plot(
   ylim = c(0, 1),
   currency = n_currency,
   frontier = TRUE,
-  points = TRUE
+  points = TRUE,
+  col = "bw"
 ) # plot end
 
 # deterministic sensitivity analyses
@@ -177,35 +177,7 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
   progress = TRUE # show progression in console
 ) # end run_owsa_det
 
-# optional two-way sensitivity analyses
-#df_psa_twsa <- df_psa_owsa[, c("p_human_sens", "p_ai_sens")]
-#obj_twsa_dam1 <- run_twsa_det( # generate dampack TWSA object
-#  params_range = data.frame( # dataframe to be used for TWSA
-#    pars = names(df_psa_twsa), # parameter names
-#    min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
-#    max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
-#  ), # close params_range dataframe 
-#  params_basecase = df_det,
-#  nsamp = 100, # number of sets of parameter values to be generated (between min and max)
-#  FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_economic_model, # function that produces outcomes based on params_basecase
-#  outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
-#  progress = TRUE # show progression in console
-#) # end run_twsa_det
-#
-#df_psa_twsa <- df_psa_owsa[, c("p_human_spec", "p_ai_spec")]
-#obj_twsa_dam2 <- run_twsa_det( # generate dampack TWSA object
-#  params_range = data.frame( # dataframe to be used for TWSA
-#    pars = names(df_psa_twsa), # parameter names
-#    min = stack(sapply(df_psa_twsa, quantile, prob = 0.025, names = FALSE))[,1], # use 95% percentiles for twsa
-#    max = stack(sapply(df_psa_twsa, quantile, prob = 0.975, names = FALSE))[,1] # use 95% percentiles for twsa 
-#  ), # close params_range dataframe 
-#  params_basecase = df_det,
-#  nsamp = 100, # number of sets of parameter values to be generated (between min and max)
-#  FUN = f_wrapper, owsa = TRUE, owsa_wtp = n_wtp, v_treatments = v_treatments, f_model = f_economic_model, # function that produces outcomes based on params_basecase
-#  outcomes = c("QALY", "Cost", "NMB"), # outcomes of interest produced by FUN  
-#  progress = TRUE # show progression in console
-#) # end run_twsa_det
-#
+# two-way sensitivity analyses
 #df_psa_twsa <- df_psa_owsa[, c("p_human_spec", "u_tp")]
 #obj_twsa_dam3 <- run_twsa_det( # generate dampack TWSA object
 #  params_range = data.frame( # dataframe to be used for TWSA
@@ -262,7 +234,7 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
 #  progress = TRUE # show progression in console
 #) # end run_twsa_det
 
-#owsa_opt_strat(
+#optional owsa_opt_strat(
 #  obj_owsa_dam$owsa_NMB,
 #  plot_const = FALSE, # TRUE = do also plot parameters that don't lead to changes in optimal strategy as they vary
 #  n_x_ticks = 5
@@ -276,7 +248,7 @@ plot <- owsa_tornado(
   theme_classic()
 plot # owsa_tornado end
 
-# owsa_tornado(
+# otpional owsa_tornado(
 #   obj_owsa_dam$owsa_iCER,
 #   min_rel_diff = 0.05 # only plot parameters that lead to a relative change in the outcome greater than or equal to this value
 # ) # owsa_tornado end
@@ -333,7 +305,8 @@ plot(
   ), # calc_exp_loss end
   currency = n_currency,
   n_x_ticks = 8, 
-  n_y_ticks = 6
+  n_y_ticks = 6,
+  col = "bw"
 ) # plot end
 
 # Info rank plot
@@ -342,7 +315,7 @@ plot <- info.rank(
   inp = createInputs(inputs = df_psa_inputs, print_is_linear_comb = FALSE),
   he = obj_bcea,
   wtp = n_wtp,
-  howManyPars = 10, 
+  howManyPars = 5, 
   graph = "ggplot2"
 )
 
@@ -371,13 +344,13 @@ groups <- list(
     which(colnames(inp$mat) %in%
             c("c_ai", "c_tp", "c_fn", "c_fp")),
   
-  "Discordance" =    # this needs to be removed when modeling AI as stand-alone intervention
+  "Discordance" =    # this needs to be removed when modeling human-AI collaboration implicitly
     which(colnames(inp$mat) %in%
             c("rho_pos", "rho_neg",
               "p_human_sens", "p_human_spec",
               "p_ai_sens", "p_ai_spec")),
   
-  "Reliance" =      # this needs to be removed when modeling AI as stand-alone intervention
+  "Reliance" =      # this needs to be removed when modeling human-AI collaboration implicitly
     which(colnames(inp$mat) %in%
             c("alpha"))
 )
@@ -418,10 +391,10 @@ ggplot(
   scale_linetype_manual(
     values = c(
       "Prediction performance" = "solid",
-      "Discordance"            = "dashed",
-      "Reliance"               = "dotted",
       "Utilities"              = "dotdash",
-      "Costs"                  = "longdash"
+      "Costs"                  = "longdash",
+      "Discordance"            = "dashed",
+      "Reliance"               = "dotted"
     )
   ) +
   theme_classic(base_size = 12) +
@@ -435,825 +408,375 @@ ggplot(
     linetype = "Parameter group"
   )
 
-# 4. Run scenario analyses ------------------------------------------------------
-# Ten simplistic scenarios were created to assess the impact of discordance (rho_pos and rho_neg)
-# and reliance (alpha, beta1, beta2)
-
-# 1 low discordance, high trust (over-reliance)
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$alpha <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
+# Alternative Group-based EVPPI
+inp <- createInputs(
+  inputs = df_psa_inputs,
+  print_is_linear_comb = FALSE
 )
 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 2 high discordance, high trust (over-reliance) 
-# same results as scenario 1 because all reliance (tp, tn, fp fn) go up
-# so maybe delete?
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$alpha <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 3 low discordance, low trust (under-reliance)
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$alpha <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp 
-
-# 4 high discordance, low trust (under-reliance)
-# same results as scenario 3 because all reliance (tp, tn, fp fn) go down
-# so maybe delete?
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$alpha <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 5 low discordance, appropriate reliance
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$beta1 <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 6 high discordance, appropriate reliance
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$beta1 <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 7 low discordance, inappropriate reliance
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$beta1 <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 8 high discordance, inappropriate reliance
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$beta1 <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 9 low discordance, consequences of fn are worse than fp
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$beta2 <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 10 high discordance, consequences of fn are worse than fp
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$beta2 <- 2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 11 low discordance, consequences fp are worse than fn 
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- 0.95
-df_det_scen$rho_pos <- 0.95
-df_det_scen$beta2 <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# 12 high discordance, consequences fp are worse than fp
-df_det_scen <- f_gen_psa(n_sim = 1)
-df_det_scen$rho_neg <- -0.95
-df_det_scen$rho_pos <- -0.95
-df_det_scen$beta2 <- -2.00
-
-df_det_scen <- f_collab_prediction(df_det_scen)
-
-df_out_det_scen <- f_wrapper(
-  v_treatments = v_treatments, # the treatment options
-  df_psa = df_det_scen, # input parameters
-  f_model = f_economic_model # model function
-)
-
-print((df_out_det_scen[4] - df_out_det_scen[3]) * n_wtp - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB 
-print((df_out_det_scen[4] - df_out_det_scen[3]) * 25000 - (df_out_det_scen[2] - df_out_det_scen[1]), digits = 10) # iNMB with 25,000 wtp
-
-# plot for prediction performance across scenarios
-# pink dots - scenarios for baseline trust in AI
-pink_data <- data.frame(
-  sensitivity = c(0.788, 0.788, 0.712,  0.712),
-  specificity = c(0.788, 0.788, 0.712, 0.712),
-  label = c("Low discordance, High trust", "High discordance, High trust", "Low discordance, Low trust", "High discordance, Low trust"),
-  legend = "scenarios for baseline trust in AI"
-)
-
-# purple dots - scenarios for appropriateness of reliance
-purple_data <- data.frame(
-  sensitivity = c(0.794, 0.940, 0.706, 0.560),
-  specificity = c(0.794, 0.940, 0.706, 0.560),
-  label = c("Low discordance, Appropriate reliance", "High discordance, Appropriate reliance", "Low discordance, Inappropriate reliance", "High discordance, Inappropriate reliance"),
-  legend = "scenarios for appropriateness of reliance"
-)
-
-# blue dots - scenarios for consequences of wrong prediction
-blue_data <- data.frame(
-  sensitivity = c(0.794, 0.940, 0.706, 0.560),
-  specificity = c(0.706, 0.560, 0.794, 0.940),
-  label = c("Low discordance, Consequences false negative", "High discordance, Consequences false negative", "Low discordance, Consequences false positive", "High discordance, Consequences false positive"),
-  legend = "scenarios for consequences of wrong prediction"
-)
-
-# orange dots - base case
-orange_data <- data.frame(
-  sensitivity = c(0.7, 0.8, 0.75),
-  specificity = c(0.7, 0.8, 0.75),
-  label = c("Standard of care", "AI stand-alone", "Human-AI collaboration: Neutral reliance"),
-  legend = "base case"
-)
-
-plot_data <- rbind(pink_data, purple_data, blue_data, orange_data)
-
-ggplot(plot_data,
-       aes(x = sensitivity,
-           y = specificity,
-           color = legend,
-           size = 4)) +
+groups <- list(
+  "Prediction performance" =
+    which(colnames(inp$mat) %in%
+            c("p_prev",
+              "p_human_sens", "p_human_spec",
+              "p_ai_sens", "p_ai_spec")),
   
-  geom_point(size = 5) +
+  "Utilities" =
+    which(colnames(inp$mat) %in%
+            c("u_tp", "u_tn", "u_fn", "u_fp")),
   
-  geom_text_repel(
-    aes(label = label),
-    size = 8,
-    max.overlaps = 20,
-    point.padding = 6,         # pushes label away from the dot itself
-    segment.color = NA,          # removes all connector lines
-    seed = 42
-  ) +
+  "Costs" =
+    which(colnames(inp$mat) %in%
+            c("c_ai", "c_tp", "c_fn", "c_fp")),
   
-  scale_color_manual(
+  "Human-AI collaboration" =    # this needs to be removed when modeling human-AI collaboration implicitly
+    which(colnames(inp$mat) %in%
+            c("rho_pos", "rho_neg", 
+              "p_human_sens", "p_human_spec",
+              "p_ai_sens", "p_ai_spec","alpha"))
+)
+
+evppi_groups <- lapply(groups, function(idx) {
+  
+  evppi(
+    he = obj_bcea,
+    param_idx = idx,
+    input = inp$mat,
+    wtp = n_wtp
+  )
+  
+})
+
+df_evppi_long <- do.call(
+  rbind,
+  lapply(seq_along(evppi_groups), function(i) {
+    
+    data.frame(
+      group = names(evppi_groups)[i],
+      wtp   = evppi_groups[[i]]$k,
+      evppi = evppi_groups[[i]]$evppi
+    )
+    
+  })
+)
+
+ggplot(
+  df_evppi_long,
+  aes(
+    x = wtp,
+    y = evppi,
+    linetype = group
+  )
+) +
+  geom_line(linewidth = 1.2, colour = "black") +
+  scale_linetype_manual(
     values = c(
-      "scenarios for baseline trust in AI" = "orange",
-      "scenarios for appropriateness of reliance" = "purple",
-      "scenarios for consequences of wrong prediction" = "steelblue",
-      "base case" = "red"
+      "Prediction performance" = "solid",
+      "Utilities"              = "dotdash",
+      "Costs"                  = "longdash",
+      "Human-AI collaboration" = "dotted" # this needs to be removed when modeling human-AI collaboration implicitly
     )
   ) +
-  
-  theme_minimal()
+  theme_classic(base_size = 12) +
+  theme(
+    legend.position  = "right",
+    legend.key.width = unit(1.5, "cm")
+  ) +
+  labs(
+    x        = "Willingness-to-pay (£)",
+    y        = "EVPPI (£)",
+    linetype = "Parameter group"
+  )
 
+# Alternative Group-based EVPPI
+inp <- createInputs(
+  inputs = df_psa_inputs,
+  print_is_linear_comb = FALSE
+)
 
-# Additional plot for prediction performance across scenarios of all stand-alone input performance scores
-#v_treatments <- c("Standard of care", "human-AI collaboration")
-#
-#scenario_grid <- tribble(
-#  ~scenario_id, ~label,                                  ~rho_pos, ~rho_neg, ~alpha, ~beta1, ~beta2,
-#  1, "1. Low discordance, over-reliance",                 0.95,     0.95,     2.00,   0.00,   0.00,
-#  2, "2. Low discordance, under-reliance",                0.95,     0.95,    -2.00,   0.00,   0.00,
-#  5, "5. Low discordance, appropriate reliance",          0.95,     0.95,     0.00,   2.00,   0.00,
-#  6, "6. High discordance, appropriate reliance",        -0.95,    -0.95,     0.00,   2.00,   0.00,
-#  7, "7. Low discordance, inappropriate reliance",        0.95,     0.95,     0.00,  -2.00,   0.00,
-#  8, "8. High discordance, inappropriate reliance",      -0.95,    -0.95,     0.00,  -2.00,   0.00,
-#  9, "9. Low discordance, FN worse than FP",              0.95,     0.95,     0.00,   0.00,   2.00,
-#  10, "10. High discordance, FN worse than FP",          -0.95,    -0.95,     0.00,   0.00,   2.00,
-#  11, "11. Low discordance, FP worse than FN",            0.95,     0.95,     0.00,   0.00,  -2.00,
-#  12, "12. High discordance, FP worse than FN",          -0.95,    -0.95,     0.00,   0.00,  -2.00
-#)
-#
-#performance_profiles <- tribble(
-#  ~profile_id, ~profile_label,                                          ~human_sens, ~human_spec, ~ai_sens, ~ai_spec,
-#  1, "Human sens=0.70, spec=0.70\nAI sens=0.80, spec=0.80",              0.70,        0.70,        0.80,     0.80,
-#  2, "Human sens=0.80, spec=0.80\nAI sens=0.70, spec=0.70",              0.80,        0.80,        0.70,     0.70,
-#  3, "Human sens=0.80, spec=0.70\nAI sens=0.70, spec=0.80",              0.80,        0.70,        0.70,     0.80,
-#  4, "Human sens=0.70, spec=0.80\nAI sens=0.80, spec=0.70",              0.70,        0.80,        0.80,     0.70,
-#  5, "Human sens=0.80, spec=0.80\nAI sens=0.80, spec=0.80",              0.80,        0.80,        0.80,     0.80
-#)
-#
-## Run all scenario x profile combinations
-#run_scenario <- function(human_sens, human_spec, ai_sens, ai_spec,
-#                         rho_pos, rho_neg, alpha, beta1, beta2) {
-#  
-#  df_scen <- f_gen_psa(n_sim = 1)
-#  
-#  # overwrite prediction performance for this profile
-#  df_scen$p_human_sens <- human_sens
-#  df_scen$p_human_spec <- human_spec
-#  df_scen$p_ai_sens    <- ai_sens
-#  df_scen$p_ai_spec    <- ai_spec
-#  
-#  # overwrite discordance/reliance parameters for this scenario
-#  df_scen$rho_pos <- rho_pos
-#  df_scen$rho_neg <- rho_neg
-#  df_scen$alpha   <- alpha
-#  df_scen$beta1   <- beta1
-#  df_scen$beta2   <- beta2
-#  
-#  df_scen <- f_collab_prediction(df_scen)
-#  
-#  data.frame(
-#    sensitivity = df_scen$p_collab_sens[1],
-#    specificity = df_scen$p_collab_spec[1]
-#  )
-#}
-#
-## Build the full results table: every scenario x every profile
-#results_list <- list()
-#row_idx <- 1
-#
-#for (p in seq_len(nrow(performance_profiles))) {
-#  
-#  prof <- performance_profiles[p, ]
-#  
-#  # Standard of care (human alone) and AI stand-alone, for this profile
-#  results_list[[row_idx]] <- data.frame(
-#    profile_id = prof$profile_id, profile_label = prof$profile_label,
-#    point_type = "Standard of care", scenario_label = "Standard of care",
-#    sensitivity = prof$human_sens, specificity = prof$human_spec
-#  )
-#  row_idx <- row_idx + 1
-#  
-#  results_list[[row_idx]] <- data.frame(
-#    profile_id = prof$profile_id, profile_label = prof$profile_label,
-#    point_type = "AI stand-alone", scenario_label = "AI stand-alone",
-#    sensitivity = prof$ai_sens, specificity = prof$ai_spec
-#  )
-#  row_idx <- row_idx + 1
-#  
-#  # Each discordance/reliance scenario, for this profile
-#  for (s in seq_len(nrow(scenario_grid))) {
-#    
-#    scen <- scenario_grid[s, ]
-#    
-#    out <- run_scenario(
-#      human_sens = prof$human_sens, human_spec = prof$human_spec,
-#      ai_sens = prof$ai_sens, ai_spec = prof$ai_spec,
-#      rho_pos = scen$rho_pos, rho_neg = scen$rho_neg,
-#      alpha = scen$alpha, beta1 = scen$beta1, beta2 = scen$beta2
-#    )
-#    
-#    results_list[[row_idx]] <- data.frame(
-#      profile_id = prof$profile_id, profile_label = prof$profile_label,
-#      point_type = "Scenario", scenario_label = scen$label,
-#      sensitivity = out$sensitivity, specificity = out$specificity
-#    )
-#    row_idx <- row_idx + 1
-#  }
-#}
-#
-#plot_data <- do.call(rbind, results_list)
-#
-## Human and AI anchors
-#anchors <- plot_data %>%
-#  filter(point_type %in% c("Standard of care", "AI stand-alone"))
-#
-## Collaborative scenarios
-#scenarios <- plot_data %>%
-#  filter(point_type == "Scenario") %>%
-#  mutate(
-#    scenario_id = sub("\\..*", "", scenario_label),
-#    
-#    scenario_group = case_when(
-#      grepl("over-reliance|under-reliance", scenario_label)
-#      ~ "Trust",
-#      
-#      grepl("appropriate reliance|inappropriate reliance", scenario_label)
-#      ~ "Appropriateness",
-#      
-#      grepl("FN worse than FP|FP worse than FN", scenario_label)
-#      ~ "Error consequences"
-#    )
-#  )
-#
-## Reference lines
-#reference_lines <- anchors %>%
-#  select(profile_id,
-#         profile_label,
-#         point_type,
-#         sensitivity,
-#         specificity) %>%
-#  pivot_wider(
-#    names_from = point_type,
-#    values_from = c(sensitivity, specificity)
-#  ) %>%
-#  rename(
-#    sens_soc = `sensitivity_Standard of care`,
-#    spec_soc = `specificity_Standard of care`,
-#    sens_ai  = `sensitivity_AI stand-alone`,
-#    spec_ai  = `specificity_AI stand-alone`
-#  )
-#
-#p <- ggplot() +
-#  
-#  geom_segment(
-#    data = reference_lines,
-#    aes(
-#      x = sens_soc,
-#      y = spec_soc,
-#      xend = sens_ai,
-#      yend = spec_ai
-#    ),
-#    colour = "grey75",
-#    linewidth = 0.4,
-#    linetype = "dashed"
-#  ) +
-#  
-#  geom_point(
-#    data = anchors,
-#    aes(
-#      x = sensitivity,
-#      y = specificity,
-#      shape = point_type
-#    ),
-#    size = 4,
-#    colour = "black"
-#  ) +
-#  
-#  geom_point(
-#    data = scenarios,
-#    aes(
-#      x = sensitivity,
-#      y = specificity,
-#      colour = scenario_group
-#    ),
-#    size = 3
-#  ) +
-#  
-#  geom_text_repel(
-#    data = scenarios,
-#    aes(
-#      x = sensitivity,
-#      y = specificity,
-#      label = scenario_id,
-#      colour = scenario_group
-#    ),
-#    size = 3,
-#    show.legend = FALSE
-#  ) +
-#  
-#  scale_shape_manual(
-#    values = c(
-#      "Standard of care" = 17,
-#      "AI stand-alone" = 15
-#    )
-#  ) +
-#  
-#  scale_colour_manual(
-#    values = c(
-#      "Trust" = "darkgreen",
-#      "Appropriateness" = "purple",
-#      "Error consequences" = "steelblue"
-#    )
-#  ) +
-#  
-#  facet_wrap(
-#    ~profile_label,
-#    ncol = 3
-#  ) +
-#  
-#  coord_equal() +
-#  
-#  theme_minimal(base_size = 11) +
-#  
-#  theme(
-#    panel.grid.minor = element_blank(),
-#    legend.position = "bottom",
-#    strip.text = element_text(face = "bold")
-# ) +
-#  
-#  labs(
-#    x = "Sensitivity",
-#    y = "Specificity",
-#    colour = "Scenario family",
-#    shape = NULL,
-#    title = "Collaborative prediction performance across scenarios"
-#  )
-#
-#p
-#
+groups <- list(
+  "Prediction performance" =
+    which(colnames(inp$mat) %in%
+            c("p_prev",
+              "p_human_sens", "p_human_spec",
+              "p_ai_sens", "p_ai_spec")),
+  
+  "Utilities" =
+    which(colnames(inp$mat) %in%
+            c("u_tp", "u_tn", "u_fn", "u_fp")),
+  
+  "Costs" =
+    which(colnames(inp$mat) %in%
+            c("c_ai", "c_tp", "c_fn", "c_fp")),
+  
+  "Human-AI collaboration" =    # this needs to be removed when modeling human-AI collaboration implicitly
+    which(colnames(inp$mat) %in%
+            c("rho_pos", "rho_neg", "alpha"))
+)
 
-# 5. Run factorial analyses ------------------------------------------------------
-# This function shows an additional analysis,
-# where seven important input parameters (p_human_sens, p_human_spec, p_ai_sens, p_ai_spec, ρpos, ρneg, α) 
-# were varied across three (or five but computationally intensive) plausible values each.
+evppi_groups <- lapply(groups, function(idx) {
+  
+  evppi(
+    he = obj_bcea,
+    param_idx = idx,
+    input = inp$mat,
+    wtp = n_wtp
+  )
+  
+})
 
-run_factorial_analysis <- function(
-    param_grid = NULL, # all scenarios
-    v_treatments = c("Standard of care", "human-AI collaboration"), # strategies
-    wtp = 35000, # willingness to pay threshold
-    verbose = TRUE # to print progress
-) {
-  
-  # create default parameter grid if not provided
-  if (is.null(param_grid)) {
-    param_grid <- create_param_grid()
-  }
-  
-  n_scenarios <- nrow(param_grid)
-  
-  if (verbose) {
-    cat("Testing", n_scenarios, "parameter combinations...\n")
-    cat("Estimated time:", round(n_scenarios / 20, 1), "minutes\n\n")
-  }
-  
-  # initialize results
-  results_list <- list() # storing each scenario result separately 
-  
-  # main loop through scenarios
-  for (i in 1:n_scenarios) {
+df_evppi_long <- do.call(
+  rbind,
+  lapply(seq_along(evppi_groups), function(i) {
     
-    if (verbose && i %% 10 == 0) { # for every 10 iterations print the progress 
-      cat("Progress:", i, "/", n_scenarios, 
-          "(", round(100 * i / n_scenarios, 1), "%)\n")
-    }
-    
-    # human-AI collaboration model
-    # generate base parameters with collaboration
-    df_collab <- f_gen_psa(n_sim = 1)
-    
-    # update with test values from grid, the simulation should match the factorial design
-    df_collab$p_human_sens <- param_grid$human_sens[i]
-    df_collab$p_human_spec <- param_grid$human_spec[i]
-    df_collab$p_ai_sens <- param_grid$ai_sens[i]
-    df_collab$p_ai_spec <- param_grid$ai_spec[i]
-    df_collab$rho_pos <- param_grid$rho_pos[i]
-    df_collab$rho_neg <- param_grid$rho_neg[i]
-    df_collab$alpha <- param_grid$alpha[i]
-    df_collab$beta1 <- param_grid$beta1[i]
-    df_collab$beta2 <- param_grid$beta2[i]
-    
-    # recalculate collaboration prediction scores
-    df_collab <- f_collab_prediction(df_collab)
-    
-    # run model with collaboration
-    results_collab <- f_wrapper(
-      v_treatments = v_treatments,
-      df_psa = df_collab,
-      f_model = f_economic_model
+    data.frame(
+      group = names(evppi_groups)[i],
+      wtp   = evppi_groups[[i]]$k,
+      evppi = evppi_groups[[i]]$evppi
     )
     
-    # extract collaboration outcomes
-    cost_human_collab <- results_collab$`Cost_Standard of care`[1]
-    qaly_human_collab <- results_collab$`QALY_Standard of care`[1]
-    cost_collab <- results_collab$`Cost_human-AI collaboration`[1]
-    qaly_collab <- results_collab$`QALY_human-AI collaboration`[1]
-    icer_collab <- results_collab$iCER[1]
+  })
+)
+
+ggplot(
+  df_evppi_long,
+  aes(
+    x = wtp,
+    y = evppi,
+    linetype = group
+  )
+) +
+  geom_line(linewidth = 1.2, colour = "black") +
+  scale_linetype_manual(
+    values = c(
+      "Prediction performance" = "solid",
+      "Utilities"              = "dotdash",
+      "Costs"                  = "longdash",
+      "Human-AI collaboration" = "dotted" # this needs to be removed when modeling human-AI collaboration implicitly
+    )
+  ) +
+  theme_classic(base_size = 12) +
+  theme(
+    legend.position  = "right",
+    legend.key.width = unit(1.5, "cm")
+  ) +
+  labs(
+    x        = "Willingness-to-pay (£)",
+    y        = "EVPPI (£)",
+    linetype = "Parameter group"
+  )
+
+# Alternative Group-based EVPPI
+inp <- createInputs(
+  inputs = df_psa_inputs,
+  print_is_linear_comb = FALSE
+)
+
+groups <- list(
+  "Prediction performance" =
+    which(colnames(inp$mat) %in%
+            c("p_prev",
+              "p_ai_sens", "p_ai_spec", 
+              "p_human_sens", "p_human_spec")),
+  
+  "Utilities" =
+    which(colnames(inp$mat) %in%
+            c("u_tp", "u_tn", "u_fn", "u_fp")),
+  
+  "Costs" =
+    which(colnames(inp$mat) %in%
+            c("c_ai", "c_tp", "c_fn", "c_fp")),
+  
+  "Human-AI collaboration" =    # this needs to be removed when modeling human-AI collaboration implicitly
+    which(colnames(inp$mat) %in%
+            c("rho_pos", "rho_neg", "alpha"))
+)
+
+evppi_groups <- lapply(groups, function(idx) {
+  
+  evppi(
+    he = obj_bcea,
+    param_idx = idx,
+    input = inp$mat,
+    wtp = n_wtp
+  )
+  
+})
+
+df_evppi_long <- do.call(
+  rbind,
+  lapply(seq_along(evppi_groups), function(i) {
     
-    # AI as stand-alone model
-    # generate base parameters WITHOUT collaboration
-    df_standalone <- f_gen_psa(n_sim = 1, human_ai_collab = FALSE)
+    data.frame(
+      group = names(evppi_groups)[i],
+      wtp   = evppi_groups[[i]]$k,
+      evppi = evppi_groups[[i]]$evppi
+    )
     
-    # update with test values from grid, the simulation should match the factorial design
-    df_standalone$p_human_sens <- param_grid$human_sens[i]
-    df_standalone$p_human_spec <- param_grid$human_spec[i]
-    df_standalone$p_ai_sens <- param_grid$ai_sens[i]  
-    df_standalone$p_ai_spec <- param_grid$ai_spec[i]
+  })
+)
+
+ggplot(
+  df_evppi_long,
+  aes(
+    x = wtp,
+    y = evppi,
+    linetype = group
+  )
+) +
+  geom_line(linewidth = 1.2, colour = "black") +
+  scale_linetype_manual(
+    values = c(
+      "Prediction performance" = "solid",
+      "Utilities"              = "dotdash",
+      "Costs"                  = "longdash",
+      "Human-AI collaboration" = "dotted" # this needs to be removed when modeling human-AI collaboration implicitly
+    )
+  ) +
+  theme_classic(base_size = 12) +
+  theme(
+    legend.position  = "right",
+    legend.key.width = unit(1.5, "cm")
+  ) +
+  labs(
+    x        = "Willingness-to-pay (£)",
+    y        = "EVPPI (£)",
+    linetype = "Parameter group"
+  )
+
+# 3. Run scenario analyses ------------------------------------------------------
+scenario_grid <- tribble(
+  ~scenario, ~rho_pos, ~rho_neg, ~alpha, ~beta1, ~beta2, ~collab,
+  
+  "Standard of care",                           NA,    NA,    NA,   NA,   NA, FALSE,
+  "Human-AI collaboration implicitly modeled",  NA,    NA,    NA,   NA,   NA, FALSE,
+  "Human-AI collaboration explicitly modeled",  0.50,  0.50,  0.00, 0.00, 0.00, TRUE,
+  
+  "Scenario 1: Low/High discordance, High trust",
+  0.95,  0.95,  2.00, 0.00, 0.00, TRUE,
+  
+  "Scenario 2: Low/High discordance, Low trust",
+  0.95,  0.95, -2.00, 0.00, 0.00, TRUE,
+  
+  "Scenario 3: Low discordance, Appropriate reliance",
+  0.95,  0.95,  0.00, 2.00, 0.00, TRUE,
+  
+  "Scenario 4: High discordance, Appropriate reliance",
+  -0.95, -0.95,  0.00, 2.00, 0.00, TRUE,
+  
+  "Scenario 5: Low discordance, Inappropriate reliance",
+  0.95,  0.95,  0.00,-2.00, 0.00, TRUE,
+  
+  "Scenario 6: High discordance, Inappropriate reliance",
+  -0.95, -0.95,  0.00,-2.00, 0.00, TRUE,
+  
+  "Scenario 7: Low discordance, Consequences false negative",
+  0.95,  0.95,  0.00, 0.00, 2.00, TRUE,
+  
+  "Scenario 8: High discordance, Consequences false negative",
+  -0.95, -0.95,  0.00, 0.00, 2.00, TRUE,
+  
+  "Scenario 9: Low discordance, Consequences false positive",
+  0.95,  0.95,  0.00, 0.00,-2.00, TRUE,
+  
+  "Scenario 10: High discordance, Consequences false positive",
+  -0.95, -0.95,  0.00, 0.00,-2.00, TRUE
+)
+
+results <- vector("list", nrow(scenario_grid))
+
+for(i in seq_len(nrow(scenario_grid))){
+  
+  scen <- scenario_grid[i,]
+  
+  df_det <- f_gen_psa(n_sim = 1)
+  
+  if(scen$scenario == "Standard of care"){
     
-    # run model with stand-alone AI
-    results_standalone <- f_wrapper(
-      v_treatments = v_treatments,
-      df_psa = df_standalone,
+    results[[i]] <- data.frame(
+      scenario = scen$scenario,
+      iCost = 0,
+      iQALY = 0,
+      iNMB = 0
+    )
+    
+    next
+  }
+  
+  if(scen$scenario == "Human-AI collaboration implicitly modeled"){
+    
+    out <- f_wrapper(
+      df_psa = df_det,
+      v_treatments = c("Standard of care","Human-AI collaboration implicitly modeled"),
+      owsa = TRUE,
+      owsa_wtp = n_wtp,
       f_model = f_economic_model,
       human_ai_collab = FALSE
     )
     
-    # extract stand-alone outcomes
-    cost_human_standalone <- results_standalone$`Cost_Standard of care`[1]
-    qaly_human_standalone <- results_standalone$`QALY_Standard of care`[1]
-    cost_standalone <- results_standalone$`Cost_human-AI collaboration`[1]
-    qaly_standalone <- results_standalone$`QALY_human-AI collaboration`[1]
-    icer_standalone <- results_standalone$iCER[1]
-    
-    # comparison metrics, measures how wrong modeling AI as stand-alone intervention can be
-    # ICER
-    delta_icer <- abs(icer_collab - icer_standalone)
-    
-    # NMB
-    nmb_collab <- (qaly_collab - qaly_human_collab) * wtp - 
-      (cost_collab - cost_human_collab)
-    nmb_standalone <- (qaly_standalone - qaly_human_standalone) * wtp - 
-      (cost_standalone - cost_human_standalone)
-    
-    delta_nmb <- abs(nmb_collab - nmb_standalone)
-    
-    rel_delta_nmb <- ifelse(
-      !is.na(nmb_standalone) && abs(nmb_standalone) > 0,
-      delta_nmb / abs(nmb_standalone),
-      NA
-    )
-    
-    decision_changes <- (nmb_collab > 0) != (nmb_standalone > 0)
-    
-    # store the results
-    results_list[[i]] <- data.frame(
-      scenario_id = i,
-      
-      # input parameters
-      human_sens = param_grid$human_sens[i],
-      human_spec = param_grid$human_spec[i],
-      ai_sens = param_grid$ai_sens[i],
-      ai_spec = param_grid$ai_spec[i],
-      rho_pos = param_grid$rho_pos[i],
-      rho_neg = param_grid$rho_neg[i],
-      alpha = param_grid$alpha[i],
-      beta1 = param_grid$beta1[i],
-      beta2 = param_grid$beta2[i],
-      
-      # derived characteristics
-      delta_sens = param_grid$ai_sens[i] - param_grid$human_sens[i],
-      delta_spec = param_grid$ai_spec[i] - param_grid$human_spec[i],
-      
-      # collaborative performance (from model)
-      collab_sens = df_collab$p_collab_sens[1],
-      collab_spec = df_collab$p_collab_spec[1],
-      
-      # economic outcomes - Collaboration
-      costs_collab = cost_collab,
-      qalys_collab = qaly_collab,
-      icer_collab = icer_collab,
-      nmb_collab = nmb_collab,
-      
-      # economic outcomes - Stand-alone
-      costs_standalone = cost_standalone,
-      qalys_standalone = qaly_standalone,
-      icer_standalone = icer_standalone,
-      nmb_standalone = nmb_standalone,
-      
-      # key metrics
-      delta_icer = delta_icer,
-      delta_nmb = delta_nmb,
-      rel_delta_nmb = rel_delta_nmb,
-      decision_changes = decision_changes,
-      
-      stringsAsFactors = FALSE
-    )
-  }
-  
-  # combine results
-  results <- do.call(rbind, results_list)
-  
-  if (verbose) {
-    cat("\nAnalysis complete!\n\n")
-  }
-  
-  # analyze results
-  analyze_results(results, verbose = verbose)
-  
-  return(results)
-}
-
-## create parameter grid
-create_param_grid <- function(quick = TRUE) {
-  
-  if (quick) {
-    grid <- expand.grid(
-      human_sens = c(0.50, 0.70, 0.90),
-      human_spec = c(0.50, 0.70, 0.90),
-      ai_sens = c(0.50, 0.70, 0.90),      
-      ai_spec = c(0.50, 0.70, 0.90),          
-      rho_pos = c(-0.95, 0, 0.95),          
-      rho_neg = c(-0.95, 0, 0.95),          
-      alpha = c(-2, 0, 2),
-      beta1 = c(-2, 0, 2),
-      beta2 = c(-2, 0, 2),
-      stringsAsFactors = FALSE
-    )
   } else {
-    # Extended grid: more comprehensive
-    grid <- expand.grid(
-      human_sens = c(0.50, 0.60, 0.70, 0.80, 0.90),
-      human_spec = c(0.50, 0.60, 0.70, 0.80, 0.90),
-      ai_sens = c(0.50, 0.60, 0.70, 0.80, 0.90),
-      ai_spec = c(0.50, 0.60, 0.70, 0.80, 0.90),
-      rho_pos = c(-0.95, -0.50, 0, 0.50, 0.95),
-      rho_neg = c(-0.95, -0.50, 0, 0.50, 0.95),
-      alpha = c(-2, -1, 0, 1, 2),
-      beta1 = c(-2, -1, 0, 1, 2),
-      beta2 = c(-2, -1, 0, 1, 2),
-      stringsAsFactors = FALSE
+    
+    df_det$rho_pos <- scen$rho_pos
+    df_det$rho_neg <- scen$rho_neg
+    df_det$alpha   <- scen$alpha
+    df_det$beta1   <- scen$beta1
+    df_det$beta2   <- scen$beta2
+    
+    out <- f_wrapper(
+      df_psa = df_det,
+      v_treatments = c("Standard of care","Human-AI collaboration explicitly modeled"),
+      owsa = TRUE,
+      owsa_wtp = n_wtp,
+      f_model = f_economic_model,
+      human_ai_collab = TRUE
     )
+    
   }
   
-  return(grid)
-}
-
-# analysis
-analyze_results <- function(results, delta_threshold = 4710, verbose = TRUE) {
-  
-  # high impact on ICER >10.000 difference
-  high_impact <- results[results$delta_nmb > delta_threshold, ]
-  summary(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
-                          "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
-  
-  # low impact
-  low_impact  <- results[results$delta_nmb <= delta_threshold, ]
-  summary(low_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", 
-                         "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
-  
-  rbind(
-    high = colMeans(high_impact[, c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")]),
-    low  = colMeans(low_impact[,  c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")])
+  results[[i]] <- data.frame(
+    scenario = scen$scenario,
+    iCost = out$iCost[1],
+    iQALY = out$iQALY[1],
+    iNMB = out$iNMB[1]
   )
   
-  # decision changes
-  n_decision <- sum(results$decision_changes, na.rm = TRUE)
-  pct_decision <- 100 * n_decision / nrow(results)
-  cat("Decision Changes at WTP:\n")
-  cat(n_decision, " of ", nrow(results), " scenarios (", round(pct_decision, 1), "%)\n\n", sep = "")
-  
-  return(list(
-    results = results,
-    high_impact   = high_impact,
-    low_impact    = low_impact
-  ))
 }
 
-# running quick factor analysis
-results <- run_factorial_analysis(
-  param_grid = create_param_grid(quick = TRUE),
-  verbose = TRUE
-)
+scen_results <- bind_rows(results)
 
-out <- analyze_results(results)
-high_impact <- out$high_impact
-low_impact <- out$low_impact
-decision_changes <- results[results$decision_changes, ]
+print(scen_results)
 
-## Alternatively, running extensive factor analysis
-#results <- run_factorial_analysis(
-#  param_grid = create_param_grid(quick = FALSE),
-#  verbose = TRUE
-#)
-#
-#out <- analyze_results(results)
-#high_impact <- out$high_impact
-#low_impact <- out$low_impact
-#decision_changes <- results[results$decision_changes, ]
-
-##additional Visualization function for a heatmap
-## summarise delta nmb by each pair of parameters
-#plot_nmb_heatmap <- function(data, var1, var2) {
-#  data %>%
-#    group_by(across(all_of(c(var1, var2)))) %>%
-#    summarise(
-#      mean_delta_nmb = mean(delta_nmb, na.rm = TRUE),
-#      n = n(),
-#      .groups = "drop"
-#    ) %>%
-#    ggplot(aes(x = factor(.data[[var1]]), y = factor(.data[[var2]]), 
-#               fill = mean_delta_nmb)) +
-#    geom_tile() +
-#    geom_text(aes(label = round(mean_delta_nmb, 0)), size = 3) +
-#    scale_fill_viridis_c(name = "mean\nΔNMB") +
-#    theme_minimal() +
-#    labs(x = var1, y = var2)
-#}
-#
-## all 7 parameters from factorial design
-#params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")
-#
-## generate all unique pairs
-#param_pairs <- combn(params, 2, simplify = FALSE)
-#
-## plot all 21 heatmaps
-#plots <- lapply(param_pairs, function(p) {
-#  plot_nmb_heatmap(results, p[1], p[2])
-#})
-#
-## print all
-#for (p in plots) print(p)
-#
-## or arrange in a grid (easier to compare)
-#do.call(grid.arrange, c(plots, ncol = 3))
-#
-
-# summarize characteristics of high impact scenarios
-params <- c("human_sens", "human_spec", "ai_sens", "ai_spec", "rho_pos", "rho_neg", "alpha", "beta1", "beta2")
-
-comparison_table <- do.call(rbind, lapply(params, function(p) {
-  tab_overall  <- prop.table(table(results[[p]])) * 100
-  tab_high     <- prop.table(table(high_impact[[p]])) * 100
-  
-  # align values in case not all levels appear in high_impact
-  all_levels <- names(tab_overall)
-  high_aligned <- tab_high[all_levels]
-  high_aligned[is.na(high_aligned)] <- 0
-  
-  data.frame(
-    parameter = p,
-    value     = all_levels,
-    overall_pct = round(as.numeric(tab_overall), 1),
-    high_impact_pct = round(as.numeric(high_aligned), 1),
-    difference = round(as.numeric(high_aligned) - as.numeric(tab_overall), 1)
+# barplot for incremental net monetary benefit compared to SoC
+ggplot(scen_results,
+       aes(x = iNMB,
+           y = factor(scenario, levels = rev(scenario)))) +
+  geom_col(fill = "grey85") +
+  theme_minimal() +
+  labs(y = NULL) +  # Removes the y-axis title completely
+  theme(
+    axis.text.y = element_text(size = 12, face = "bold") # Increases scenario label size (adjust 'size' as needed)
   )
-}))
 
-print(comparison_table)
+# barplot for incremental QALYs compared to SoC
+ggplot(scen_results,
+       aes(x = iQALY,
+           y = factor(scenario, levels = rev(scenario)))) +
+  geom_col(fill = "grey85") +
+  theme_minimal() +
+  labs(y = NULL) +  # Removes the y-axis title completely
+  theme(
+    axis.text.y = element_text(size = 12, face = "bold") # Increases scenario label size (adjust 'size' as needed)
+  )
+
+# barplot for incremental costs compared to SoC
+ggplot(scen_results,
+       aes(x = iCost,
+           y = factor(scenario, levels = rev(scenario)))) +
+  geom_col(fill = "grey85") +
+  theme_minimal() +
+  labs(y = NULL) +  # Removes the y-axis title completely
+  theme(
+    axis.text.y = element_text(size = 12, face = "bold") # Increases scenario label size (adjust 'size' as needed)
+  )
+
 # end of script
