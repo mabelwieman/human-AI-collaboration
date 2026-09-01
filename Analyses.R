@@ -28,7 +28,7 @@ suppressPackageStartupMessages(lapply(packages, require, character.only = TRUE))
 rm(list = ls()) # clear objects from workspace
 
 # general
-v_treatments <- c("Standard of care", "Human-AI collaboration explicitly modelled") # vector of strategy names
+v_treatments <- c("Human assessment", "Human-AI collaboration explicitly modelled") # vector of strategy names
 n_currency <- "Pound"
 n_wtp <- 35000 # willingness to pay value
 v_wtp <- seq(from = 0, to = 50000, by = 2000)  # willingness to pay vector
@@ -419,22 +419,22 @@ obj_owsa_dam <- run_owsa_det( # generate dampack OWSA object
 scenario_grid <- tribble(
   ~scenario, ~rho_pos, ~rho_neg, ~alpha, ~beta1, ~beta2, ~collab, ~legend_group, ~label,
   
-  "Standard of care",                            NA,    NA,    NA,   NA,   NA, FALSE, "base case", "Standard of care",
-  "Human-AI collaboration implicitly modeled",  NA,    NA,    NA,   NA,   NA, FALSE, "base case", "AI stand-alone",
-  "Human-AI collaboration explicitly modeled",  0.50,  0.50,  0.00, 0.00, 0.00, TRUE,  "base case", "Human-AI collaboration",
+  "Human assessment",                            NA,    NA,    NA,   NA,   NA, FALSE, "Base cases", "Human assessment",
+  "Human-AI collaboration implicitly modeled",  NA,    NA,    NA,   NA,   NA, FALSE, "Base cases", "Human-AI collaboration implicitly",
+  "Human-AI collaboration explicitly modeled",  0.50,  0.50,  0.00, 0.00, 0.00, TRUE,  "Base cases", "Human-AI collaboration explicitly",
   
-  "Scenario 1: Low/High discordance, High trust",              0.95,  0.95,  2.00, 0.00, 0.00, TRUE, "scenarios for baseline trust in AI", "1",
-  "Scenario 2: Low/High discordance, Low trust",               0.95,  0.95, -2.00, 0.00, 0.00, TRUE, "scenarios for baseline trust in AI", "2",
+  "Scenario 1: High baseline trust in AI",              0.95,  0.95,  2.00, 0.00, 0.00, TRUE, "Scenarios for baseline trust in AI", "1",
+  "Scenario 2: Low baseline trust in AI",               0.95,  0.95, -2.00, 0.00, 0.00, TRUE, "Scenarios for baseline trust in AI", "2",
   
-  "Scenario 3: Low discordance, Appropriate reliance",         0.95,  0.95,  0.00, 2.00, 0.00, TRUE, "scenarios for appropriateness of reliance", "3",
-  "Scenario 4: High discordance, Appropriate reliance",       -0.95, -0.95,  0.00, 2.00, 0.00, TRUE, "scenarios for appropriateness of reliance", "4",
-  "Scenario 5: Low discordance, Inappropriate reliance",       0.95,  0.95,  0.00,-2.00, 0.00, TRUE, "scenarios for appropriateness of reliance", "5",
-  "Scenario 6: High discordance, Inappropriate reliance",     -0.95, -0.95,  0.00,-2.00, 0.00, TRUE, "scenarios for appropriateness of reliance", "6",
+  "Scenario 3: High concordance/Low discordance, Appropriate reliance",         0.95,  0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "3",
+  "Scenario 4: Low concordance/High discordance, Appropriate reliance",       -0.95, -0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "4",
+  "Scenario 5: High concordance/Low discordance, Inappropriate reliance",       0.95,  0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "5",
+  "Scenario 6: Low concordance/High discordance, Inappropriate reliance",     -0.95, -0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "6",
   
-  "Scenario 7: Low discordance, Consequences false negative",   0.95,  0.95,  0.00, 0.00, 2.00, TRUE, "scenarios for consequences of wrong prediction", "7",
-  "Scenario 8: High discordance, Consequences false negative", -0.95, -0.95,  0.00, 0.00, 2.00, TRUE, "scenarios for consequences of wrong prediction", "8",
-  "Scenario 9: Low discordance, Consequences false positive",   0.95,  0.95,  0.00, 0.00,-2.00, TRUE, "scenarios for consequences of wrong prediction", "9",
-  "Scenario 10: High discordance, Consequences false positive",-0.95, -0.95,  0.00, 0.00,-2.00, TRUE, "scenarios for consequences of wrong prediction", "10"
+  "Scenario 7: High concordance/Low discordance, Consequences false negative",   0.95,  0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "7",
+  "Scenario 8: Low concordance/High discordance, Consequences false negative", -0.95, -0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "8",
+  "Scenario 9: High concordance/Low discordance, Consequences false positive",   0.95,  0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "9",
+  "Scenario 10: Low concordance/High discordance, Consequences false positive",-0.95, -0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "10"
 )
 
 results <- vector("list", nrow(scenario_grid))
@@ -444,7 +444,7 @@ for(i in seq_len(nrow(scenario_grid))){
   scen <- scenario_grid[i,]
   df_det <- f_gen_psa(n_sim = 1)
   
-  if(scen$scenario == "Standard of care"){
+  if(scen$scenario == "Human assessment"){
     
     results[[i]] <- data.frame(
       scenario = scen$scenario,
@@ -463,7 +463,7 @@ for(i in seq_len(nrow(scenario_grid))){
     
     out <- f_wrapper(
       df_psa = df_det,
-      v_treatments = c("Standard of care","Human-AI collaboration implicitly modeled"),
+      v_treatments = c("Human assessment","Human-AI collaboration implicitly modeled"),
       owsa = TRUE,
       owsa_wtp = n_wtp,
       f_model = f_economic_model,
@@ -483,7 +483,7 @@ for(i in seq_len(nrow(scenario_grid))){
 
     out <- f_wrapper(
       df_psa = df_det,
-      v_treatments = c("Standard of care","Human-AI collaboration explicitly modeled"),
+      v_treatments = c("Human assessment","Human-AI collaboration explicitly modeled"),
       owsa = TRUE,
       owsa_wtp = n_wtp,
       f_model = f_economic_model,
@@ -509,6 +509,19 @@ for(i in seq_len(nrow(scenario_grid))){
 
 scen_results <- bind_rows(results)
 
+scen_results <- scen_results %>%
+  mutate(
+    legend_group = factor(
+      legend_group,
+      levels = c(
+        "Base cases",
+        "Scenarios for baseline trust in AI",
+        "Scenarios for appropriateness of reliance",
+        "Scenarios for consequences of wrong prediction"
+      )
+    )
+  )
+
 print(scen_results)
 
 # scatter plot for prediction performance outcomes
@@ -531,19 +544,21 @@ ggplot(scen_results, aes(x = sens, y = spec, shape = legend_group, color = point
   ) +
   scale_shape_manual(
     values = c(
-      "base case" = 19,                                     
-      "scenarios for appropriateness of reliance" = 15,     
-      "scenarios for baseline trust in AI" = 17,             
-      "scenarios for consequences of wrong prediction" = 18 
+      "Base cases" = 1,         
+      "Scenarios for baseline trust in AI" = 15,  
+      "Scenarios for appropriateness of reliance" = 17,     
+      "Scenarios for consequences of wrong prediction" = 18 
     )
   ) +
   scale_color_identity() + 
+  scale_x_continuous(breaks = c(0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95)) +
+  scale_y_continuous(breaks = c(0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95)) +
   coord_cartesian(xlim = c(0.55, 0.95), ylim = c(0.55, 0.95)) +
   theme_bw() +
   labs(
-    x = "sensitivity",
-    y = "specificity",
-    shape = "legend"
+    x = "Sensitivity",
+    y = "Specificity",
+    shape = NULL
   ) +
   theme(
     legend.position = "right",
