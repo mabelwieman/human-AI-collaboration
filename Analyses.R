@@ -426,15 +426,15 @@ scenario_grid <- tribble(
   "Scenario 1: High baseline trust in AI",              0.95,  0.95,  2.00, 0.00, 0.00, TRUE, "Scenarios for baseline trust in AI", "1",
   "Scenario 2: Low baseline trust in AI",               0.95,  0.95, -2.00, 0.00, 0.00, TRUE, "Scenarios for baseline trust in AI", "2",
   
-  "Scenario 3: High concordance/Low discordance, Appropriate reliance",         0.95,  0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "3",
-  "Scenario 4: Low concordance/High discordance, Appropriate reliance",       -0.95, -0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "4",
-  "Scenario 5: High concordance/Low discordance, Inappropriate reliance",       0.95,  0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "5",
-  "Scenario 6: Low concordance/High discordance, Inappropriate reliance",     -0.95, -0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "6",
+  "Scenario 3: Low discordance, Appropriate reliance",         0.95,  0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "3",
+  "Scenario 4: High discordance, Appropriate reliance",       -0.95, -0.95,  0.00, 2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "4",
+  "Scenario 5: Low discordance, Inappropriate reliance",       0.95,  0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "5",
+  "Scenario 6: High discordance, Inappropriate reliance",     -0.95, -0.95,  0.00,-2.00, 0.00, TRUE, "Scenarios for appropriateness of reliance", "6",
   
-  "Scenario 7: High concordance/Low discordance, Consequences false negative",   0.95,  0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "7",
-  "Scenario 8: Low concordance/High discordance, Consequences false negative", -0.95, -0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "8",
-  "Scenario 9: High concordance/Low discordance, Consequences false positive",   0.95,  0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "9",
-  "Scenario 10: Low concordance/High discordance, Consequences false positive",-0.95, -0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "10"
+  "Scenario 7: Low discordance, Consequences false negative",   0.95,  0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "7",
+  "Scenario 8: High discordance, Consequences false negative", -0.95, -0.95,  0.00, 0.00, 2.00, TRUE, "Scenarios for consequences of wrong prediction", "8",
+  "Scenario 9: Low discordance, Consequences false positive",   0.95,  0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "9",
+  "Scenario 10: High discordance, Consequences false positive",-0.95, -0.95,  0.00, 0.00,-2.00, TRUE, "Scenarios for consequences of wrong prediction", "10"
 )
 
 results <- vector("list", nrow(scenario_grid))
@@ -564,9 +564,9 @@ ggplot(scen_results, aes(x = sens, y = spec, shape = legend_group, color = point
     legend.position = "right",
     panel.grid.major = element_line(color = "grey92"),
     panel.grid.minor = element_line(color = "grey96"),
-    axis.title = element_text(size = 16),
+    axis.title = element_text(size = 16, face = "bold"),
     axis.text = element_text(size = 16),
-    legend.text = element_text(size = 14),   
+    legend.text = element_text(size = 14, face = "bold"),  
     legend.title = element_text(size = 16)  
   )
 
@@ -577,9 +577,13 @@ ggplot(scen_results,
            y = factor(scenario, levels = rev(scenario)))) +
   geom_col(fill = "grey50") +
   theme_minimal() +
-  labs(y = NULL) +  
+  labs(
+    x = "iNMB (versus human assessment)",
+    y = NULL
+  ) +  
   theme(
-    axis.text.y = element_text(size = 12, face = "bold") 
+    axis.text.y = element_text(size = 12, color = "black", face = "bold"),
+    axis.title.x = element_text(size = 12, color = "black", face = "bold")
   )
 
 # barplot for incremental QALYs compared to SoC
@@ -588,9 +592,13 @@ ggplot(scen_results,
            y = factor(scenario, levels = rev(scenario)))) +
   geom_col(fill = "grey50") +
   theme_minimal() +
-  labs(y = NULL) +  
+  labs(
+    x = "iQALYs (versus human assessment)",
+    y = NULL
+  ) +  
   theme(
-    axis.text.y = element_text(size = 12, face = "bold") 
+    axis.text.y = element_text(size = 12, color = "black", face = "bold"),
+    axis.title.x = element_text(size = 12, color = "black", face = "bold")
   )
 
 # barplot for incremental costs compared to SoC
@@ -599,9 +607,13 @@ ggplot(scen_results,
            y = factor(scenario, levels = rev(scenario)))) +
   geom_col(fill = "grey50") +
   theme_minimal() +
-  labs(y = NULL) +  
+  labs(
+  x = "iCosts (versus human assessment)",
+  y = NULL
+  ) +  
   theme(
-    axis.text.y = element_text(size = 12, face = "bold") 
+    axis.text.y = element_text(size = 12, color = "black", face = "bold"),
+    axis.title.x = element_text(size = 12, color = "black", face = "bold")
   )
 
 # end of script
