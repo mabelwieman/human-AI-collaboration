@@ -67,13 +67,13 @@ testthat::expect_true(all(df_psa$p_human_rely_ai_fn >= 0 & df_psa$p_human_rely_a
 testthat::expect_equal(
   df_psa$p_con_tp + df_psa$p_con_fn + df_psa$p_dis_human_tp_ai_fn + df_psa$p_dis_human_fn_ai_tp,
   rep(1, nrow(df_psa)), 
-  info = "Dis/Concordance probabilities sum to 1"
+  info = "(Dis/Con)cordance probabilities sum to 1"
 )
 
 testthat::expect_equal(
   df_psa$p_con_tn + df_psa$p_con_fp + df_psa$p_dis_human_tn_ai_fp + df_psa$p_dis_human_fp_ai_tn,
   rep(1, nrow(df_psa)), 
-  info = "Dis/Concordance probabilities sum to 1"
+  info = "(Dis/Con)cordance probabilities sum to 1"
 )
 
 # checking whether probabilistic inputs and deterministic inputs are similar
@@ -108,7 +108,7 @@ testthat::test_that("TECH-VER: Setting all costs to 0 yields total cost of 0", {
   expect_equal(res[, 2], rep(0, nrow(res)))
 })
 
-# checking whether incremental outcomes are 0, when setting performance, costs, and utilities equal between SoC and AI
+# checking whether incremental outcomes are 0, when setting performance, costs, and utilities equal between the strategies
 testthat::test_that("TECH-VER: Identical strategies yield 0 incremental costs and QALYs", {
   psa_equal <- df_psa
   psa_equal$p_ai_sens <- psa_equal$p_human_sens

@@ -2,29 +2,23 @@
 #'
 #' This function evaluates the expected costs and quality-adjusted life years (QALYs) 
 #' associated with two treatment strategies:
-#' human-only assessment (standard of care) and either modeling human-AI collaboration implicitly or
-#' model human-AI collaboration explicitly.
+#' human assessment (standard of care) and either modeling human-AI collaboration implicitly or
+#' modeling human-AI collaboration explicitly.
 #'
 #' @param params Named vector or data frame row containing model parameters.
-#' @param v_treatments Character vector containing the names of the
-#'   strategies being compared.
-#' @param human_ai_collab Logical. If `TRUE`, strategy 2 represents
-#'   model human–AI collaboration explicit.ly 
-#'   If `FALSE`, strategy 2 represents model human-AI collaboration implicitly
+#' @param v_treatments Character vector containing the names of the strategies being compared.
+#' @param human_ai_collab Logical. If `TRUE`, strategy 2 represents human–AI collaboration explicitly modeled
+#'   If `FALSE`, strategy 2 represents human-AI collaboration implicitly modeled
 #'
 #' @details
 #' The economic model is implemented as a simple decision tree.
 #'
 #' For each strategy:
 #' \itemize{
-#'   \item Disease prevalence determines the proportion of patients with
-#'         and without disease.
-#'   \item Sensitivity determines the probabilities of
-#'         true positives (TP), false negatives (FN),
-#'   \item Specificity  determines the probabilities of
-#'         true negatives (TN), and false positives (FP).
-#'   \item Expected costs and QALYs are calculated by weighting outcome-
-#'         specific costs and utilities (determined in f_gen_psa) by their probabilities.
+#'   \item Disease prevalence determines the proportion of patients with and without disease.
+#'   \item Sensitivity determines the probabilities of true positives (TP), false negatives (FN),
+#'   \item Specificity  determines the probabilities of true negatives (TN), and false positives (FP).
+#'   \item Expected costs and QALYs are calculated by weighting outcome-specific costs and utilities (determined in f_gen_psa) by their probabilities.
 #' }
 #'
 #' Incremental cost-effectiveness is calculated as:
@@ -41,34 +35,34 @@
 #' # modeling human-AI collaboration implicitly
 #' f_economic_model(
 #'   params = params,
-#'   v_treatments = c("Standard of care", "human-AI collaboration implicit"),
+#'   v_treatments = c("Human assessment", "human-AI collaboration modeled implicitly"),
 #'   human_ai_collab = FALSE
 #' )
 #' 
 #'# modeling human-AI collaboration explicitly
 #' f_economic_model(
 #'   params = params,
-#'   v_treatments = c("Standard of care", "human-AI collaboration explicit"),
+#'   v_treatments = c("Human assessment", "human-AI collaboration modeld explicitly"),
 #'   human_ai_collab = TRUE
 #' )
 #' @export
 
 f_economic_model <- function(
     params, # input parameters
-    v_treatments, # the treatment options: standard of care vs modeling human-AI collaboration implicitly or explicitly, depends on selection
-    human_ai_collab = TRUE  # FALSE when you want to model human-AI collaboration implicitly
+    v_treatments, # the treatment options: human assessment vs human-AI collaboration implicitly modeled or explicitly modeled, depends on selection
+    human_ai_collab = TRUE  # FALSE when you want human-AI collaboration implicitly modeled
 ){
   with(as.list(params), {
     
     # input
     n_treatments <- length(v_treatments)
     
-    # strategy 1: human-only
+    # strategy 1: human assessment
     sens_t1 <- p_human_sens
     spec_t1 <- p_human_spec
     cost_test_t1 <- c_scan
     
-    # strategy 2: AI-only or human-AI collaboration
+    # strategy 2: human-AI collaboration implicitly or explicitly modeled
     sens_t2 <- if (human_ai_collab) p_collab_sens else p_ai_sens
     spec_t2 <- if (human_ai_collab) p_collab_spec else p_ai_spec
     cost_test_t2 <- c_scan + c_ai
@@ -100,8 +94,7 @@ f_economic_model <- function(
     )
     
     # strategy 1
-    # joint probabilities are calculated by combining disease prevalence
-    # with prediction performance (sensitivity and specificity).
+    # joint probabilities are calculated by combining disease prevalence with prediction performance (sensitivity and specificity).
     m_dt[1, "p disease"]    <- p_prev
     m_dt[1, "p no disease"] <- 1 - p_prev
     m_dt[1, "TP"] <- p_prev * sens_t1
@@ -122,8 +115,7 @@ f_economic_model <- function(
     m_dt[2, "p negative"] <- m_dt[2, "FN"] + m_dt[2, "TN"]
     
     # costs and QALYs
-    # outcome-specific costs and utilities are weighted by the probability
-    # of each prediction outcome (TP, FN, TN, FP).
+    # outcome-specific costs and utilities are weighted by the probability of each prediction outcome (TP, FN, TN, FP).
     qaly_t1 <- m_dt[1, "TP"] * u_tp +
       m_dt[1, "FN"] * u_fn +
       m_dt[1, "TN"] * u_tn +
@@ -138,7 +130,7 @@ f_economic_model <- function(
       m_dt[1, "TP"] * c_tp +
       m_dt[1, "FN"] * c_fn +
       m_dt[1, "FP"] * c_fp
-    # TN costs are assumed to be zero and therefore omitted.
+    # TN costs are assumed to be zero and therefore omitted
     
     cost_t2 <- cost_test_t2 +
       m_dt[2, "TP"] * c_tp +
@@ -146,8 +138,7 @@ f_economic_model <- function(
       m_dt[2, "FP"] * c_fp
     
     # incremental cost-effectiveness ratio
-    # positive values indicate the additional cost per additional QALY
-    # gained by strategy 2 (new) relative to strategy 1 (standard of care).
+    # positive values indicate the additional cost per additional QALY gained by strategy 2 (new) relative to strategy 1 (human assessment).
     iCER <- (cost_t2 - cost_t1) / (qaly_t2 - qaly_t1)
     
     # output

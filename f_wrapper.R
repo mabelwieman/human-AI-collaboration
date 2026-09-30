@@ -1,27 +1,21 @@
 #' Description: Wrapper function 
 #' 
-#' This function serves as a wrapper around the specified economic model
-#' function (`f_economic_model`) and Probabilistic Sensitivity Analysis inputs function (`f_gen_psa`). 
+#' This function serves as a wrapper around the specified economic model function (`f_economic_model`) and 
+#' Probabilistic Sensitivity Analysis inputs function (`f_gen_psa`). 
 #' It executes the model for each row of PSA inputs
 #' and structures the outputs for probabilistic sensitivity analysis (PSA)
 #' or deterministic one-way sensitivity analysis (OWSA).
 #'
-#' @param df_psa Data frame containing model input parameters. Each row
-#'   represents one set of parameter values (one PSA draw or deterministic run).
-#' @param v_treatments Character vector containing the names of the treatment
-#'   strategies being compared.
-#' @param owsa Logical. If `TRUE` and `n_sim = 1`, returns output in the
-#'   format required by `dampack::run_owsa_det()`. Default is `FALSE`.
-#' @param owsa_wtp Numeric. Willingness-to-pay threshold used to calculate
-#'   net monetary benefit (NMB) during OWSA. Default is `35000`.
+#' @param df_psa Data frame containing model input parameters. 
+#' Each row represents one set of parameter values (one PSA draw or deterministic run).
+#' @param v_treatments Character vector containing the names of the treatment strategies being compared.
+#' @param owsa Logical. If `TRUE` and `n_sim = 1`, returns output in the format required by `dampack::run_owsa_det()`. Default is `FALSE`.
+#' @param owsa_wtp Numeric. Willingness-to-pay threshold used to calculate net monetary benefit (NMB) during OWSA. Default is `35000`.
 #' @param f_model Function specifying the economic model to be evaluated.
 #'   The function must return costs, QALYs, and incremental cost-effectiveness
 #'   outcomes (ICER) for all treatment strategies.
-#' @param human_ai_collab Logical. If `TRUE`, the model includes human–AI
-#'   collaboration parameters (concordance, discordance, and reliance). 
-#'   If collaboration accuracy parameters are not
-#'   already present in `df_psa`, they are generated automatically using
-#'   `f_collab_prediction()`.
+#' @param human_ai_collab Logical. If `TRUE`, the model includes human–AI collaboration parameters (concordance, discordance, and reliance). 
+#'   If collaboration accuracy parameters are not already present in `df_psa`, they are generated automatically using `f_collab_prediction()`.
 #'
 #' @details
 #' The function:
@@ -103,7 +97,7 @@ f_wrapper <- function(
     owsa = FALSE, # required for owsa output dataframe format
     owsa_wtp = 35000, # required for owsa output
     f_model, # specify model function
-    human_ai_collab = TRUE # FALSE when you want to model human-AI collaboration implicitly
+    human_ai_collab = TRUE # FALSE when you want human-AI collaboration implicitly modeled
 ){
   
   # always force recalculation of collaborative parameters during OWSA / TWSA

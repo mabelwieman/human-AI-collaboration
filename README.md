@@ -1,6 +1,6 @@
 # Human-AI Collaboration in Health Economic Evaluations
 This repository contains the source code and supporting scripts for the manuscript on
-Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based Prediction Models: A Modelling Framework and Simulation Study
+Incorporating Human-AI Collaboration in Health Economic Evaluations of AI-based Prediction Models: A Modeling Framework and Simulation Study
 
 There are eight scripts in total:
 -	"f_gen_psa.R" function to generate probabilistic (sensitivity) analysis input parameters
@@ -64,8 +64,8 @@ There are eight scripts in total:
 
 ## Usage
 
-1.  **Selecting the strategy: human-AI collaboration explicitly or implicitly modelled**
-    Set the human_ai_collab flags in the scripts `f_gen_psa.R`, `f_economic_model.R` and `f_wrapper.R` to FALSE (implicitly modelled) or TRUE (explicitly modelled).
+1.  **Selecting the strategy: human-AI collaboration explicitly or implicitly modeled**
+    Set the human_ai_collab flags in the scripts `f_gen_psa.R`, `f_economic_model.R` and `f_wrapper.R` to FALSE (implicitly modeled) or TRUE (explicitly modeled).
     
 1.  **Main results:**
     Run the script `Analyses.R` to generate the results of our simulation study.
@@ -75,7 +75,7 @@ There are eight scripts in total:
 
 ## Model conceptualization
 
-We performed a simulation study to illustrate our proposed health economic modeling framework explicitly considering human-AI collaboration within model-based health economic evaluations to support informed decision-making for further research and implementation of AI-based prediction models when only AI stand-alone evidence is available. A hypothetical cohort of patients were diagnosed either via implicit modelling of human-AI collaboration (.e. assuming AI stand-alone performance evidence reflects human-AI joint performance), explicit modelling of human-AI collaboration (i.e. including concordance, discordance, and reliance parameters), or SoC (i.e. human assessment). The three strategies were compared in terms of performance outcomes and (cost-)effectiveness.
+We performed a simulation study to illustrate our proposed health economic modeling framework explicitly considering human-AI collaboration within model-based health economic evaluations to support informed decision-making for further research and implementation of AI-based prediction models when only AI stand-alone evidence is available. A hypothetical cohort of patients were diagnosed either via implicit modeling of human-AI collaboration (.e. assuming AI stand-alone performance evidence reflects human-AI joint performance), explicit modeling of human-AI collaboration (i.e. including concordance, discordance, and reliance parameters), or human assessment (i.e. standard of care). The three strategies were compared in terms of performance outcomes and (cost-)effectiveness.
 
 ## Model inputs
 

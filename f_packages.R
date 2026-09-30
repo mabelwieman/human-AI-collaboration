@@ -1,16 +1,13 @@
 #' Description: Helper function to install and/or update packages 
 #'
-#' This function checks whether a set of required packages is
-#' available in the local R environment. Missing packages can be installed
-#' automatically, and existing packages (including their dependencies) can
+#' This function checks whether a set of required packages is available in the local R environment. 
+#' Missing packages can be installed automatically, and existing packages (including their dependencies) can
 #' optionally be updated to the latest available version.
 #'
 #' @param packages Character vector containing package names.
-#' @param install Logical. If `TRUE`, packages that are not currently
-#'   installed will be installed automatically. Default is `TRUE`.
-#' @param update Logical. If `TRUE`, installed packages and their
-#'   dependencies will be checked for available updates and updated if
-#'   necessary. Default is `FALSE`.
+#' @param install Logical. If `TRUE`, packages that are not currently installed will be installed automatically. Default is `TRUE`.
+#' @param update Logical. If `TRUE`, installed packages and their dependencies will be checked for available updates 
+#' and updated if necessary. Default is `FALSE`.
 #'
 #' @details
 #' The function performs two independent tasks:

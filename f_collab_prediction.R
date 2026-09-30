@@ -4,32 +4,28 @@
 #' So, the sensitivity and specificity of human-AI collaboration.
 #' The performance of the human and AI alone will be combined with assumptions regarding their error correlations
 #' to calculate the probabilities of (con/dis)cordance
-#' and the probability that the human relies (or not) on the AI recommendation in case of discordance.
-#' See Appendix I of the manuscript for the same model parameter equation for (dis/con)cordance.
+#' and the probability that the human relies (or not) on the AI recommendation in case of discordance,
+#' is based on assumptions regarding their baseline trust in AI, appropriateness of reliance and consequences of a wrong decision.
+#' See Appendix I of the manuscript for the same model parameter equation for (con/dis)cordance.
 #' See Appendix I of the manuscript for the same model parameter equation for reliance.
 #' 
-#' @param df_psa Data frame containing model input parameters. Each row
-#' represents one set of parameter values (one PSA draw or deterministic run).
+#' @param df_psa Data frame containing model input parameters. 
+#' Each row represents one set of parameter values (one PSA draw or deterministic run).
 #'
 #' @details
 #' The function processes each parameter set independently. 
-#' (Con/Dis)cordance is modelled using a Gaussian copula formula parametrised by 
+#' (Con/Dis)cordance is modeled using a Gaussian copula formula parametrized by 
 #' human stand-alone sensitivity `p_human_sens`, AI stand-alone sensitivity `p_ai_sens` and error correlation between them `rho_pos`,
 #' and human stand-alone specificity `p_human_spec`, AI stand-alone specificity `p_ai_spec` and error correlation between them `rho_neg`
-#' Reliance probabilities are modelled using an inverse-logit function parameterised by 
-#' baseline trust `alpha`, level of appropriateness `beta1` and consequences of wrong decision `beta2`.
+#' Reliance probabilities are modeled using a logit distribution parameterized by 
+#' baseline trust `alpha`, level of appropriateness `beta1` and consequences of a wrong decision `beta2`.
 #' 
 #' @return The input data frame with additional columns containing:
 #' \describe{
 #'   \item{Concordance probabilities}{`p_con_tp`, `p_con_tn`, `p_con_fp`, `p_con_fn`}
-#'   \item{Discordance probabilities}{`p_dis_human_tp_ai_fn`,
-#'     `p_dis_human_fn_ai_tp`, `p_dis_human_tn_ai_fp`,
-#'     `p_dis_human_fp_ai_tn`}
-#'   \item{Reliance probabilities}{`p_human_rely_ai_tp`,
-#'     `p_human_rely_ai_tn`, `p_human_rely_ai_fp`,
-#'     `p_human_rely_ai_fn`}
-#'   \item{Collaborative performance}{`p_collab_sens` and
-#'     `p_collab_spec`}
+#'   \item{Discordance probabilities}{`p_dis_human_tp_ai_fn`,`p_dis_human_fn_ai_tp`, `p_dis_human_tn_ai_fp`,`p_dis_human_fp_ai_tn`}
+#'   \item{Reliance probabilities}{`p_human_rely_ai_tp`,`p_human_rely_ai_tn`, `p_human_rely_ai_fp`, `p_human_rely_ai_fn`}
+#'   \item{Collaborative performance}{`p_collab_sens` and `p_collab_spec`}
 #' }
 #' 
 #' ' @examples
@@ -58,7 +54,7 @@ f_collab_prediction <- function(df_psa) {
     a_ai_pos <- qnorm(df_psa$p_ai_sens[i]) # latent threshold implied by marginal AI sensitivity
   
     # calculate concordance probabilities using Gaussian copula formula
-    df_psa$p_con_tp[i] <- mvtnorm::pmvnorm( # probability both human and AI are tp
+    df_psa$p_con_tp[i] <- mvtnorm::pmvnorm( # probability both human and AI are TP
       lower = c(-Inf, -Inf),
       upper = c(a_h_pos, a_ai_pos),
       corr  = matrix(c(1, df_psa$rho_pos[i],

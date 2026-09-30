@@ -3,8 +3,7 @@
 #' This function generates probabilistic sensitivity and specificity samples
 #' from a correlated bivariate normal distribution on the logit scale.
 #' The Beta-distributed sensitivity and specificity are approximated by
-#' corresponding logit-normal distributions that preserve their means,
-#' variances, and specified correlation.
+#' corresponding logit-normal distributions that preserve their means, variances, and specified correlation.
 #'
 #' @param mean_sens Numeric. Mean sensitivity (probability scale, 0-1).
 #' @param mean_spec Numeric. Mean specificity (probability scale, 0-1).

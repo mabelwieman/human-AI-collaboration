@@ -4,7 +4,6 @@
 #' for considering human-AI collaboration within model-based health economic evaluations 
 #' to support informed decision-making for further research and implementation of AI-based prediction models 
 #' when only AI stand-alone evidence is available.
-#' It calculates the deterministic and probabilistic performance and cost-effectiveness outcomes.
 #'
 #' Specifically, the script:
 #'   1. Generates deterministic and probabilistic (with 10,0000 iterations) model inputs.
@@ -28,7 +27,7 @@ suppressPackageStartupMessages(lapply(packages, require, character.only = TRUE))
 rm(list = ls()) # clear objects from workspace
 
 # general
-v_treatments <- c("Human assessment", "Human-AI collaboration explicitly modelled") # vector of strategy names
+v_treatments <- c("Human assessment", "Human-AI collaboration explicitly modeled") # vector of strategy names
 n_currency <- "Pound"
 n_wtp <- 35000 # willingness to pay value
 v_wtp <- seq(from = 0, to = 50000, by = 2000)  # willingness to pay vector
